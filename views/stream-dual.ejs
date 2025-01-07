@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    .dual {
+      height: 100%;
+      width: 50%;
+      position: fixed;
+      z-index: 1;
+      top: 0;
+      overflow-x: hidden;
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center center;
+    }
+
+    .left {
+      left: 0;
+      object-fit: cover;
+    }
+
+    .right {
+      object-fit: cover;
+      right: 0;
+    }
+
+    
+  </style>
+<body>  
+  <div class="container">
+    <img id="1" class="dual left" alt="Cam feed 1" src=""/> 
+    <img id="2" class="dual right" alt="Cam feed 2" src=""/>
+  </div>
+  
+</body>
+<script type="module">
+  
+
+  async function updateStreams() {
+    const leftCamDelay = parseInt('<%= left.delay %>')
+    const rightCamDelay = parseInt('<%= right.delay %>')
+    const maxDelay = 36;
+    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+    // Ensure delays are within the allowed maximum
+    const delays = [
+      Math.min(leftCamDelay, maxDelay),
+      Math.min(rightCamDelay, maxDelay),
+    ];
+
+    const elements = [
+      document.getElementById("1"),
+      document.getElementById("2"),
+    ];
+
+    // Validate that all elements exist
+    elements.forEach((element, index) => {
+      if (!element) {
+        console.error(`Element with ID ${index + 1} not found!`);
+      }
+    });
+
+    // Determine the maximum delay to run the loop for all images
+    const maxIterations = Math.max(...delays);
+
+    for (let i = 0; i <= maxIterations; i++) {
+      elements.forEach((element, index) => {
+        const currentDelay = delays[index];
+
+        if (i < currentDelay) {
+          element.src = `img/hourglass/${currentDelay - i}.jpg`; // Show countdown image
+        } else if (
+          element.src !== `http://localhost:3000/stream/stream${index + 1}/${currentDelay}`
+        ) {
+          element.src = `http://localhost:3000/stream/stream${index + 1}/${currentDelay}`; // Start the stream
+        }
+      });
+
+      await sleep(1000)
+    }
+  }
+
+  await updateStreams()
+
+  document.addEventListener("keydown", function(event) {
+    let key = event.key
+
+    if (key == "+") {
+      window.location.replace("/", true)
+    }
+  })
+</script>
+  

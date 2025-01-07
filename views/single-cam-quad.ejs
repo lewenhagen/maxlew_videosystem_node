@@ -1,0 +1,40 @@
+<%- include("header.ejs") %>
+
+<span id="cameras" style="display:none"><%= JSON.stringify(config) %></span>
+
+<div class="small_logo">
+  <img src="img/maxlew_logo.svg" alt="maxlew logo">
+</div>
+<div class="small_logo2">
+  <img src="img/kgf_logo.png" alt="kgf logo">
+</div>
+<div class="is-rounded" style="width: 50%; margin: 0 auto;margin-top: 10%">
+  <div class="lists">
+    <h1>Singlecam Quadview</h1>
+    <ul>
+      <% for (const index in config) { %>
+        <li><%=parseInt(index)+1%>. <%=config[index].name%></li>
+      <% } %>
+      <hr style="margin:10px 0 10px 0">
+      <li>+. Huvudmeny </li>
+      </ul>
+  </div>
+</div>
+<script>
+  let cameras = JSON.parse(document.getElementById("cameras").innerText)
+  
+  let menuTitle = document.getElementById("menuTitle")
+  let menuContent = document.getElementById("menuContent")
+
+  document.addEventListener("keydown", function(event) {
+  let key = event.key
+
+  if (parseInt(key) > 0 && parseInt(key) < cameras.length+1) {
+    window.location.href = `/selectbox-quad/${key}`
+  } else if (key == "+") {
+    window.location.replace("/", true)
+  }
+  })
+</script>
+
+<%- include("footer.ejs") %>

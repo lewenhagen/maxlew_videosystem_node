@@ -1,0 +1,33 @@
+<%- include('header.ejs') %>
+
+<div class="container">
+    <div class="is-rounded" style="margin: 0 auto;">
+        <form class="selectform" method="GET" action="/stream">
+            <label for="name_field">Skriv in önskad delay för <span class="logocolor"><%= chosenCamera.name %> </span>(s) och tryck Enter:</label>
+            <input type="number" autofocus id="name_field" name="delay" required>
+            <input type="number" name="cam" value="<%=cam%>" style="display: none;">
+            <input type="submit" hidden>
+        </form>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("keydown", function(event) {
+        let key = event.key;
+
+        switch(key) {
+            case "ArrowUp":
+            case "ArrowDown":
+            case "ArrowRight":
+                event.preventDefault();
+                break;
+            case "+":
+                window.location.replace("/", true);
+                break;
+
+        }
+    })
+
+</script>
+
+<%- include('footer.ejs') %>

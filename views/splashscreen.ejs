@@ -1,0 +1,42 @@
+<%- include("header.ejs") %>
+
+<div class="container">
+  <div class="logo">
+      <img src="img/maxlew_logo.svg" alt="logo">
+      <div class="logotext">
+          <span id="logo_title">MAXLEW</span><br>
+          <span id="logo_text">Video System</span>
+      </div>
+  </div>
+</div>
+<audio autoplay>
+  <source src="sound/pressstart.ogg" type="audio/ogg">
+      Your browser does not support the audio element.
+  </audio>
+<script>
+  let separation = window.setTimeout(function() {
+      document.getElementsByClassName("logotext")[0].style.visibility = "visible";
+      document.getElementsByClassName("logotext")[0].style.webkitAnimationName = "fadein";
+      document.getElementsByClassName("logotext")[0].style.webkitAnimationDuration = "4s";
+
+  }, 2000)
+  let timer = window.setTimeout(function() {
+      window.location.replace(`/`);
+  }, 8000)
+
+  document.addEventListener("keydown", function(event) {
+      let key = event.key;
+      console.log(event);
+      switch(key) {
+          case "+":
+              document.documentElement.webkitRequestFullscreen();
+              break;
+          case "-":
+              document.webkitExitFullscreen();
+              break;
+          case "default":
+              break;
+
+      }
+  })
+</script>

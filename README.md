@@ -1,0 +1,1 @@
+Create cameras.json or run maxlew.bash init!!

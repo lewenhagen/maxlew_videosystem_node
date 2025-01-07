@@ -1,0 +1,23 @@
+<%- include('header.ejs') %>
+
+<div class="container">
+  <div class="is-rounded" style="margin: 0 auto;">
+      <div id="randomnumber"><%= secret %></div>
+      <form class="selectform" method="post">
+          <label for="shutdown">Skriv in de fyra siffrorna och tryck Enter:</label>
+          <input type="text" id="shutdown" name="shutdown" class="nes-input" autofocus required>
+          <input type="hidden" value="<%= secret %>" name="secret">
+          <input type="submit" hidden>
+      </form>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("keydown", function(event) {
+    if (event.key === "+") {
+      window.location.replace("/", true)
+    }
+  })
+</script>
+
+<%- include('footer.ejs') %>

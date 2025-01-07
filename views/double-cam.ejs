@@ -1,0 +1,87 @@
+<%- include("header.ejs") %>
+<style>
+  .checkmark {
+      display: inline-block;
+      transform: rotate(45deg);
+      height: 25px;
+      width: 12px;
+      margin-left: 5%; 
+      border-bottom: 7px solid #78b13f;
+      border-right: 7px solid #78b13f;
+    }
+</style>
+
+  <span id="cameras" style="display:none"><%= JSON.stringify(config) %></span>
+  <!-- DEV PURPOSE ONLY -->
+  <!-- <% for (const cam in config) { %>
+    (<%=parseInt(cam)+1%>) <%= config[cam].name %>, <%= config[cam].ip %>
+  <% } %> -->
+  <!-- END OF DEV PURPOSE SHIT -->
+  <div class="small_logo">
+    <img src="img/maxlew_logo.svg" alt="maxlew logo">
+  </div>
+  <div class="small_logo2">
+    <img src="img/kgf_logo.png" alt="kgf logo">
+  </div>
+  <div class="is-rounded" style="width: 50%; margin: 0 auto;margin-top: 10%">
+    <div class="lists">
+      <h1>Doublecam</h1>
+      <ul>
+        <% for (const index in config) { %>
+          <li><%=parseInt(index)+1%>. <%=config[index].name%></li>
+        <% } %>
+        <hr style="margin:10px 0 10px 0">
+        <li>+. Main menu </li>
+        </ul>
+        <h4 style="margin-top: 50px;">Välj 1 eller 2 kameror och tryck Enter</h4>
+    </div>
+  </div>
+  
+  <!-- <img id="camerafeed" />
+   -->
+  <script>
+      let cameras = JSON.parse(document.getElementById("cameras").innerText)
+      let chosenCameras = []
+      let menuTitle = document.getElementById("menuTitle")
+      let menuContent = document.getElementById("menuContent")
+
+      function selectCamera(key) {
+        let cam = key-1
+        let checkmark = document.createElement("div")
+        checkmark.className = "checkmark"
+        checkmark.id = cam
+
+        let chosenCam = document.getElementsByTagName("li")[cam]
+        
+        if (chosenCameras.length < 2) {
+          if (!chosenCameras.includes(cam)) {
+            chosenCameras.push(cam)
+            chosenCam.appendChild(checkmark)
+          } else{
+            chosenCameras.pop(cam)
+            document.getElementById(cam).remove();     
+          }
+          
+        } else if (chosenCameras.includes(cam)) {
+          chosenCameras.splice(chosenCameras.indexOf(cam), 1)
+          document.getElementById(cam).remove();
+        }
+      }
+
+      document.addEventListener("keydown", function(event) {
+          let key = event.key
+          console.log(key)
+          if (parseInt(key) > 0 && parseInt(key) <= cameras.length) {
+              selectCamera(key)
+          } else if (key == "+") {
+              window.location.replace("/", true)
+          } else if (key == "Enter") {
+              console.log(chosenCameras)
+              if (chosenCameras.length > 0) {
+                window.location.href = `/selectbox-delay-dual-left/${chosenCameras.join("/")}`
+              }
+          }
+      })
+  </script>
+  
+  <%- include("footer.ejs") %>

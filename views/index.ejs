@@ -1,0 +1,60 @@
+<%- include("header.ejs") %>
+
+  <div class="small_logo">
+    <img src="img/maxlew_logo.svg" alt="maxlew logo">
+  </div>
+  <div class="small_logo2">
+    <img src="img/kgf_logo.png" alt="kgf logo">
+  </div>
+  <div class="is-rounded" style="width: 50%; margin: 0 auto;margin-top: 10%">
+    <div class="lists">
+      <h1>Huvudmeny</h1>
+      <ul>
+          <li>1. Singlecam</li>
+          <li>2. Singlecam Quadview</li>
+          <li>3. Doublecam</li>
+          <!-- <li>+. Main menu </li> -->
+          <!-- <li>-. Refresh camera list </li> -->
+          <hr style="margin:10px 0 10px 0">
+          <li>*. Stäng av systemet </li>
+        </ul>
+    </div>
+  </div>
+  <script> 
+    let menuTitle = document.getElementById("menuTitle")
+    let menuContent = document.getElementById("menuContent")
+
+    document.addEventListener("keydown", function(event) {
+    let key = event.key
+    switch (key) {
+      case "*":
+        // shutdown
+        window.location.href = "/shutdown"
+        break
+      case "-":
+        // refresh camera list
+        break
+      case "+":
+        // main menu
+        break
+      case "1":
+        // delay single cam
+        window.location.replace("/singlecam", true)
+        break
+      case "2":
+        // delay singlecam quadview
+        window.location.replace("/singlecam-quad", true)
+        break
+      case "3":
+        // delay doublecam
+        window.location.replace("/doublecam", true)
+        break
+      case "9":
+        // Easteregg
+        new Audio('sound/tf.mp3').play()
+        break
+      }
+    })
+  </script>
+  
+  <%- include("footer.ejs") %>
