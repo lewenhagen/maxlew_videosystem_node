@@ -51,10 +51,11 @@ app.get('/shutdown', function (req, res) {
 app.post('/shutdown', function (req, res) {
   if (parseInt(req.body.shutdown) === parseInt(req.body.secret)) {
     console.log("Shutting down")
-    // exec('sudo shutdown -h now');
+    exec('sudo shutdown -h now')
+    process.exit()
     
   } else {
-    console.log("wrong number motherfucker")
+    console.log("Wrong number motherfucker")
   }
   res.redirect('/shutdown')
 })
@@ -223,11 +224,11 @@ app.get('/stream/:streamName/:delay', async (req, res) => {
 // app.listen(3000, ExecuteChromium)
 app.listen(3000)
 
-// Open browswer
+// Open browser
 await open(url)
 
 // function ExecuteChromium() {
-//   exec("chromium-browser --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000", function(error, stdout, stderr) {
+//   exec("chromium --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000", function(error, stdout, stderr) {
 //       // console.log("stdout: " + stdout);
 //       console.log("stderr: " + stderr);
 //       if (error !== null) {

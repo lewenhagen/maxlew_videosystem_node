@@ -56,7 +56,8 @@ check_prerequisities()
     do
       if ! command -v "$util" 2>&1 >/dev/null; then
           echo -e "$util is ${RED}not installed${NC}"
-          notInstalled+=("$util")
+          # notInstalled+=("$util")
+          sudo apt install -y $util
       else
         echo -e "$util ${GREEN}is installed${NC}"
       fi
@@ -67,7 +68,8 @@ check_prerequisities()
       read -p "node is not installed. Should I help you with that? [y/N] " answer
       if [[ "$answer" = "y" ]]; then
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
-        nvm install --lts
+        # nvm install --lts
+        echo "restart terminal and run 'nvm install --lts'"
       else
         echo "Ok, I will not help with node installation."
       fi  
@@ -77,16 +79,16 @@ check_prerequisities()
     
     [[ ${#notInstalled[@]} -eq 0 ]] && exit 0
 
-    read -p "Should I install the missing stuff? [y/N] " answer
+    # read -p "Should I install the missing stuff? [y/N] " answer
 
-    if [[ "$answer" = "y" ]]; then
-      for item in "${notInstalled[@]}"
-      do
-        sudo apt install -y $item       
-      done
-    else
-      echo "I will not install anything"
-    fi 
+    # if [[ "$answer" = "y" ]]; then
+    #   for item in "${notInstalled[@]}"
+    #   do
+    #     sudo apt install -y $item       
+    #   done
+    # else
+    #   echo "I will not install anything"
+    # fi 
 
    
 
@@ -184,7 +186,17 @@ list() {
   jq .[] 'config/cameras.json'
 }
 
+init() {
+   local json_file="config/cameras.json"
+   local tarball="maxlewvideosystem-2.0.0.tgz"
 
+   [[ ! -f $json_file ]] && echo "I will create the file: $json_file." && touch "config/cameras.json"
+   
+  
+
+   [[ -f $tarball ]] && npm install ./$tarball 
+
+}
 
 main()
 {
@@ -213,10 +225,10 @@ main()
                 exit 0
             ;;
 
-            install)
-                install
-                exit 0
-            ;;
+            # install)
+            #     install
+            #     exit 0
+            # ;;
 
             add)
               addcamera
@@ -240,6 +252,11 @@ main()
 
             check)
               check_prerequisities
+              exit 0
+            ;;
+
+            init)
+              init
               exit 0
             ;;
 
