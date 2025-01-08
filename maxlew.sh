@@ -44,7 +44,7 @@ menu () {
   remove              Removes cameras from config
   scan                Scans network for cameras
   check               Checks if prerequisities are installed
-  install             Tries to install missing packages
+  install             Tries to install missing prerequisities
 
   boot                Starts the application
 
@@ -81,9 +81,19 @@ find_ip_cameras() {
   nmap -r -sn 192.168.0.1/24 | grep "$manu" | awk '{print $6}'
 }
 
+kill() {
+  echo "Killing running instance"
+  kill -9 $(lsof -i :3000 | head -n 2 | tail -n 1 | cut -d" " -f5)
+}
+
 
 boot()
 {
+    export NVM_DIR="/home/$USER/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+    [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
+    export NODE_ENV=development
+    
     sleep 5
     #
     oldport=$(lsof -i :3000 | cut -d" " -f2 | tail -n1)
@@ -91,12 +101,13 @@ boot()
     if [ -z "$oldport" ]; then
         echo "No port in use..."
     else
-        kill $oldport && echo "Old stuff killed."
+        kill -9 $oldport && echo "Old stuff killed."
     fi
 
-    cd "$PATH_TO_EXEC" && npm start &
+    cd "$PATH_TO_EXEC"
+    npm start &
 
-    sleep 3
+    sleep 5 # Det här pratade Per om...
 
     # --kiosk
     # google-chrome --no-first-run --disable-popup-blocking --disable-default-apps --disable-notifications --disable-extensions --disable-background-networking --app="google.se"
@@ -110,13 +121,19 @@ boot()
     #   }
     # }
  
-    sleep 2
+    # sleep 2
 
     xdotool key F11
 }
 
 addcamera () {
   local json_file="config/cameras.json"
+
+  if [[ ! -f $json_file ]]; then
+    echo "File $json_file does not exist. I will now create it..."
+    touch "config/cameras.json"
+    echo "File $json_file created. I will now continue."
+  fi
   
   read -p "Enter name: " name
   read -p "Enter IP address: " ip_address
@@ -229,6 +246,11 @@ main()
 
             init)
               init
+              exit 0
+            ;;
+
+            kill)
+              kill
               exit 0
             ;;
 

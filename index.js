@@ -19,7 +19,7 @@ const dualcams = {
 }
 
 // const url = 'http://localhost:3000/splashscreen'
-const url = 'http://localhost:3000'
+// const url = 'http://localhost:3000'
 const __dirname = new URL('.', import.meta.url).pathname
 
 const app = express()
@@ -221,18 +221,18 @@ app.get('/stream/:streamName/:delay', async (req, res) => {
 })
 
 // Start server
-// app.listen(3000, ExecuteChromium)
-app.listen(3000)
+app.listen(3000, ExecuteChromium)
+// app.listen(3000)
 
 // Open browser
-await open(url)
+// await open(url)
 
-// function ExecuteChromium() {
-//   exec("chromium --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000", function(error, stdout, stderr) {
-//       // console.log("stdout: " + stdout);
-//       console.log("stderr: " + stderr);
-//       if (error !== null) {
-//           console.log("exec errror: " + error);
-//       }
-//   });
-// }
+function ExecuteChromium() {
+  exec("/usr/bin/chromium --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000/splashscreen", function(error, stdout, stderr) {
+      // console.log("stdout: " + stdout);
+      console.log("stderr: " + stderr);
+      if (error !== null) {
+          console.log("exec errror: " + error);
+      }
+  });
+}

@@ -1,0 +1,6 @@
+[Desktop Entry]
+Type=Application
+Exec=/opt/maxlew_videosystem_node/maxlew.sh boot
+Name=Maxlew Videosystem
+Comment=Start the Maxlew Videosystem
+X-GNOME-Autostart-enabled=true
