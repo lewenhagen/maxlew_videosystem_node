@@ -24,7 +24,7 @@ PATH_TO_SYSTEM="$PATH_TO_EXEC/script"
 # FILEPATH="$PATH_TO_SYSTEM/ips.txt"
 # rm $FILEPATH
 
-UTILS=("curl" "nmap" "xdotool" "jq" "chromium-browser")
+# UTILS=("curl" "nmap" "xdotool" "jq")
 
 version()
 {
@@ -52,32 +52,20 @@ menu () {
 check_prerequisities()
 {
     local notInstalled=()
-    for util in "${UTILS[@]}"
-    do
-      if ! command -v "$util" 2>&1 >/dev/null; then
-          echo -e "$util is ${RED}not installed${NC}"
-          # notInstalled+=("$util")
-          sudo apt install -y $util
-      else
-        echo -e "$util ${GREEN}is installed${NC}"
-      fi
-    done
+
+    [[ ! $(command -v curl) ]] && echo -e "Curl is ${RED}not installed${NC}" && sudo apt install curl || echo -e "Curl${GREEN} is installed${NC}"
+    [[ ! $(command -v jq) ]] && echo -e "jq is ${RED}not installed${NC}" && sudo apt install jq || echo -e "jq${GREEN} is installed${NC}"
+    [[ ! $(command -v nmap) ]] && echo -e "nmap is ${RED}not installed${NC}" && sudo apt install nmap || echo -e "nmap${GREEN} is installed${NC}"
+    [[ ! $(command -v xdotool) ]] && echo -e "xdotool is ${RED}not installed${NC}" && sudo apt install xdotool || echo -e "xdotool${GREEN} is installed${NC}"
+    
+    # Install node, npm
+    [[ ! $(command -v node) ]] && bash install_node.sh || echo -e "Node${GREEN} is installed${NC}"
+
+    # Install Chromium Browswer on Debian. For Ubuntu it is "chromium-browswer"
+    [[ ! $(command -v chromium) ]] && sudo apt install chromium || echo -e "Chromium${GREEN} is installed${NC}"
 
     
-    if ! command -v "node" 2>&1 >/dev/null; then
-      read -p "node is not installed. Should I help you with that? [y/N] " answer
-      if [[ "$answer" = "y" ]]; then
-        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash
-        # nvm install --lts
-        echo "restart terminal and run 'nvm install --lts'"
-      else
-        echo "Ok, I will not help with node installation."
-      fi  
-    else
-      echo -e "node ${GREEN}is installed${NC}"
-    fi
-    
-    [[ ${#notInstalled[@]} -eq 0 ]] && exit 0
+    # [[ ${#notInstalled[@]} -eq 0 ]] && echo "The rest seems to be installed." && exit 0
 
     # read -p "Should I install the missing stuff? [y/N] " answer
 
@@ -89,17 +77,6 @@ check_prerequisities()
     # else
     #   echo "I will not install anything"
     # fi 
-
-   
-
-
-    # if ! command -v /sbin/ifconfig 2>&1 >/dev/null; then
-    #       echo "ifconfig could not be found"
-    # else
-    #   echo "yay"
-    # fi
-    # type google-chrome >/dev/null 2>&1 || { echo >&2 "I require nmap but it's not installed.  Aborting."; exit 1; }
-    # type /sbin/ifconfig >/dev/null 2>&1 || { echo >&2 "I require ifconfig but it's not installed. Install it by running 'apt install net-tools'.  Aborting."; exit 1; }
 }
 
 
