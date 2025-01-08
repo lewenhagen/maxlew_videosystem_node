@@ -1,4 +1,4 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 
 VERSION="2.0"
 RED='\033[0;31m'
@@ -38,11 +38,13 @@ menu () {
   Command:            Description:
   ----------------------------------------------------------
   menu                Displays this menu
+  init                Creates the configfile
   list                Lists cameras in config
   add                 Add camera to config
   remove              Removes cameras from config
   scan                Scans network for cameras
   check               Checks if prerequisities are installed
+  install             Tries to install missing packages
 
   boot                Starts the application
 
@@ -51,32 +53,25 @@ menu () {
 
 check_prerequisities()
 {
-    local notInstalled=()
+    [[ ! $(command -v curl) ]] && echo -e "Curl is ${RED}not installed${NC}" || echo -e "Curl${GREEN} is installed${NC}"
+    [[ ! $(command -v jq) ]] && echo -e "jq is ${RED}not installed${NC}" || echo -e "jq${GREEN} is installed${NC}"
+    [[ ! $(command -v nmap) ]] && echo -e "nmap is ${RED}not installed${NC}" || echo -e "nmap${GREEN} is installed${NC}"
+    [[ ! $(command -v xdotool) ]] && echo -e "xdotool is ${RED}not installed${NC}" || echo -e "xdotool${GREEN} is installed${NC}"
+    [[ ! $(command -v node) ]] && echo -e "node is ${RED}not installed${NC}" || echo -e "Node${GREEN} is installed${NC}"
+    [[ ! $(command -v chromium) ]] && echo -e "Chromium is ${RED}not installed${NC}" || echo -e "Chromium${GREEN} is installed${NC}"
+}
 
-    [[ ! $(command -v curl) ]] && echo -e "Curl is ${RED}not installed${NC}" && sudo apt install curl || echo -e "Curl${GREEN} is installed${NC}"
-    [[ ! $(command -v jq) ]] && echo -e "jq is ${RED}not installed${NC}" && sudo apt install jq || echo -e "jq${GREEN} is installed${NC}"
-    [[ ! $(command -v nmap) ]] && echo -e "nmap is ${RED}not installed${NC}" && sudo apt install nmap || echo -e "nmap${GREEN} is installed${NC}"
-    [[ ! $(command -v xdotool) ]] && echo -e "xdotool is ${RED}not installed${NC}" && sudo apt install xdotool || echo -e "xdotool${GREEN} is installed${NC}"
-    
-    # Install node, npm
-    [[ ! $(command -v node) ]] && bash install_node.sh || echo -e "Node${GREEN} is installed${NC}"
+install() {
+  [[ ! $(command -v curl) ]] && read -p "Press Enter to install Curl..." && sudo apt install -y curl
+  [[ ! $(command -v jq) ]] && read -p "Press Enter to install jq..." && sudo apt install -y jq 
+  [[ ! $(command -v nmap) ]] && read -p "Press Enter to install nmap..." && sudo apt install -y nmap
+  [[ ! $(command -v xdotool) ]] && read -p "Press Enter to install xdotool..." && sudo apt install -y xdotool
+  
+  # Install node, npm
+  [[ ! $(command -v node) ]] && read -p "Press Enter to install node..." && bash install_node.sh
 
-    # Install Chromium Browswer on Debian. For Ubuntu it is "chromium-browswer"
-    [[ ! $(command -v chromium) ]] && sudo apt install chromium || echo -e "Chromium${GREEN} is installed${NC}"
-
-    
-    # [[ ${#notInstalled[@]} -eq 0 ]] && echo "The rest seems to be installed." && exit 0
-
-    # read -p "Should I install the missing stuff? [y/N] " answer
-
-    # if [[ "$answer" = "y" ]]; then
-    #   for item in "${notInstalled[@]}"
-    #   do
-    #     sudo apt install -y $item       
-    #   done
-    # else
-    #   echo "I will not install anything"
-    # fi 
+  # Install Chromium Browswer on Debian. For Ubuntu it is "chromium-browswer"
+  [[ ! $(command -v chromium) ]] && read -p "Press Enter to install Chromium..." && sudo apt install chromium
 }
 
 
@@ -202,10 +197,10 @@ main()
                 exit 0
             ;;
 
-            # install)
-            #     install
-            #     exit 0
-            # ;;
+            install)
+                install
+                exit 0
+            ;;
 
             add)
               addcamera
