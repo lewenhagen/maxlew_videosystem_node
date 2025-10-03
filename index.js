@@ -1,6 +1,6 @@
 import dotenv from 'dotenv'
 import express from 'express'
-import { readFile } from 'fs/promises'
+import { readFile, writeFile } from 'fs/promises'
 import open from 'open'
 import { CameraStreamManager } from './src/camerastream.js'
 import { URL } from 'url'
@@ -12,9 +12,25 @@ import { nextTick } from 'node:process'
 
 dotenv.config()
 
-const config = JSON.parse(
-  await readFile('./config/cameras.json', 'utf-8')
-)
+async function loadCamerasConfig() {
+  try {
+    const data = await readFile('./config/cameras.json', 'utf-8');
+    return JSON.parse(data);
+  } catch (err) {
+    if (err.code === 'ENOENT') {
+      // File does not exist — create default
+      const defaultData = [];
+      await writeFile('./config/cameras.json', JSON.stringify(defaultData, null, 2));
+      console.log('[INFO] cameras.json not found, created default file.');
+      return defaultData;
+    } else {
+      // Other errors — rethrow
+      throw err;
+    }
+  }
+}
+
+let config = await loadCamerasConfig()
 
 let tries = 3
 
