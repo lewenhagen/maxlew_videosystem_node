@@ -1,6 +1,10 @@
 import dotenv from 'dotenv'
 import express from 'express'
 import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { readFile, writeFile } from 'fs/promises'
 import open from 'open'
 import { CameraStreamManager } from './src/camerastream.js'
@@ -43,12 +47,13 @@ const dualcams = {
 
 // const url = 'http://localhost:3000/splashscreen'
 // const url = 'http://localhost:3000'
-const __dirname = new URL('.', import.meta.url).pathname
+// const __dirname = new URL('.', import.meta.url).pathname
 
 const app = express()
 
+app.use(express.static(path.join(__dirname, 'public')));
 // app.use(express.static(__dirname + '/public'))
-app.use(express.static(path.resolve('./public')));
+// app.use(express.static(path.resolve('./public')));
 
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
