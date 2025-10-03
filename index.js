@@ -266,8 +266,8 @@ app.get('/stream/:streamName/:delay', async (req, res) => {
 })
 
 // Start server
-app.listen(3000, ExecuteChromium)
-// app.listen(3000)
+// app.listen(3000, ExecuteChromium)
+app.listen(3000)
 
 // Open browser
 // await open(url)
