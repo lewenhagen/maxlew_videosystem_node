@@ -1,0 +1,14 @@
+<%- include('header.ejs') %>
+
+<div class="container">
+  <div class="is-rounded" style="margin: 0 auto;">
+      <h3><%= message %></h3>
+      <form class="selectform" method="post" action="/checkcode">
+          <label for="name_field">Ange koden nedan och tryck Enter.</label>
+          <input type="number" autofocus id="name_field" name="code" class="nes-input" required>
+          <input type="submit" hidden>
+      </form>
+  </div>
+</div>
+
+<%- include('footer.ejs') %>

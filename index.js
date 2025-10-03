@@ -6,11 +6,17 @@ import { CameraStreamManager } from './src/camerastream.js'
 import { URL } from 'url'
 import { exec } from 'node:child_process'
 
+import { checkValidity, testCode } from './src/licensecheck.js'
+import req from 'express/lib/request.js'
+import { nextTick } from 'node:process'
+
 dotenv.config()
 
 const config = JSON.parse(
   await readFile('./config/cameras.json', 'utf-8')
 )
+
+let tries = 3
 
 const streamManager = new CameraStreamManager()
 const dualcams = {
@@ -27,13 +33,36 @@ const app = express()
 app.use(express.static(__dirname + '/public'))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
+
 app.set('view engine', 'ejs')
+
+async function checkLicense (req, res, next) {
+  if (await checkValidity()) {
+    next()
+  } else {
+    res.render("license-expired", {message: "Er licens har gått ut tyvärr."})
+  }
+}
+
+app.post("/checkcode", async function (req, res) {
+  let enteredCode = req.body.code
+  let validCheck = await testCode(enteredCode)
+
+  if (validCheck) {
+    console.log("correct code")
+    res.redirect('/')
+  } else {
+    console.log("incorrect code")
+    res.render('license-expired', {message: "Fel kod."})
+  }
+  
+})
 
 app.get('/splashscreen', function (req, res) {
   res.render('splashscreen')
 })
 
-app.get('/', async function (req, res) {
+app.get('/', checkLicense, async function (req, res) {
   for (const stream of streamManager.getStreamNames()) {
     await streamManager.stopCameraStream(stream)
   }
@@ -228,7 +257,7 @@ app.listen(3000, ExecuteChromium)
 // await open(url)
 
 function ExecuteChromium() {
-  exec("/usr/bin/chromium --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000/splashscreen", function(error, stdout, stderr) {
+  exec("/usr/bin/chromium-browser --kiosk --disable-restore-session-state --disable-features=TranslateUI --disable-session-crashed-bubble --app=http://localhost:3000/splashscreen", function(error, stdout, stderr) {
       // console.log("stdout: " + stdout);
       console.log("stderr: " + stderr);
       if (error !== null) {

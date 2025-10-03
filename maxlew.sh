@@ -19,8 +19,8 @@ NC='\033[0m' # No Color
 
 # sudo apt install jq chromium-browser
 
-PATH_TO_EXEC="$HOME/maxlew_videosystem"
-PATH_TO_SYSTEM="$PATH_TO_EXEC/script"
+PATH_TO_EXEC="/opt/maxlew_videosystem_node"
+# PATH_TO_SYSTEM="$PATH_TO_EXEC/script"
 # FILEPATH="$PATH_TO_SYSTEM/ips.txt"
 # rm $FILEPATH
 
