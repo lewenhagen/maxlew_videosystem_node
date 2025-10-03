@@ -1,5 +1,6 @@
 import dotenv from 'dotenv'
 import express from 'express'
+import path from 'path';
 import { readFile, writeFile } from 'fs/promises'
 import open from 'open'
 import { CameraStreamManager } from './src/camerastream.js'
@@ -46,7 +47,9 @@ const __dirname = new URL('.', import.meta.url).pathname
 
 const app = express()
 
-app.use(express.static(__dirname + '/public'))
+// app.use(express.static(__dirname + '/public'))
+app.use(express.static(path.resolve('./public')));
+
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
