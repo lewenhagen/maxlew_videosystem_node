@@ -16,8 +16,19 @@ body {
     right:0;
     bottom:0;
     font-size: 40px;
-    background: linear-gradient(to left top, #949db8, #fff);
+    background: linear-gradient(135deg, #dff6ff, #e6f7ff, #f3e8ff, #fff7f2);
+      background-size: 400% 400%;
+      animation: pastelMove 5s ease infinite;
+    /* background: linear-gradient(135deg, #dff6ff 0%, #e6f7ff 30%, #f3e8ff 60%, #fff7f2 100%); */
+
+    /* background: linear-gradient(to left top, #949db8, #fff); */
 }
+
+@keyframes pastelMove {
+      0%   { background-position: 0% 50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
 
 h1 {
   margin-bottom: 1em;

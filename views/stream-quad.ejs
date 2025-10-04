@@ -4,28 +4,40 @@
       margin: 0;
       padding: 0;
       height: 100%;
+      overflow: hidden;
     }
 
     .grid-container {
       display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(2, 1fr);
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr 1fr;
+      width: 100vw;
       height: 100vh;
     }
 
-    .camera-feed {
+    .cell {
       width: 100%;
       height: 100%;
-      object-fit: cover;
-    } 
+      overflow: hidden;
+    }
+
+    .cell img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover; 
+      object-position: center;
+      background-color: black;
+      display: block;
+    }
+
   </style>
 <body>
   
   <div class="grid-container">
-    <div id="one"><img id="1" class=" camera-feed" alt="Cam feed 1" src=""/> </div>
-    <div id="two"><img id="2" class=" camera-feed" alt="Cam feed 2" src=""/> </div>
-    <div id="three"><img id="3" class=" camera-feed" alt="Cam feed 3" src=""/></div>
-    <div id="four"><img id="4" class=" camera-feed" alt="Cam feed 4" src=""/></div>
+    <div class="cell" id="one"><img id="1" class=" camera-feed" alt="Cam feed 1" src=""/> </div>
+    <div class="cell" id="two"><img id="2" class=" camera-feed" alt="Cam feed 2" src=""/> </div>
+    <div class="cell" id="three"><img id="3" class=" camera-feed" alt="Cam feed 3" src=""/></div>
+    <div class="cell" id="four"><img id="4" class=" camera-feed" alt="Cam feed 4" src=""/></div>
   </div>
   
 </body>
