@@ -2,8 +2,15 @@ import fetch from 'node-fetch'
 import { Worker } from 'worker_threads'
 import path from 'path'
 import { fileURLToPath } from 'url'
+import { pathToFileURL } from 'url'
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+const workerPath = pathToFileURL(path.join(__dirname, 'frameParserWorker.js')).href
+// import { Readable } from 'stream'
+
+
+// const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 class CameraStream {
   constructor(url, fps, name) {
@@ -32,7 +39,9 @@ class CameraStream {
       }
 
       this.stream = response.body
-      this.worker = new Worker(path.join(__dirname, 'frameParserWorker.js'))
+
+      this.worker = new Worker(path.resolve(__dirname, 'frameParserWorker.js'), { type: 'module' })
+      // console.log(`${this.name} - Worker created`)
 
       this.worker.on('message', (frame) => {
         this.frames.push(frame)
@@ -57,7 +66,10 @@ class CameraStream {
       })
 
       this.stream.on('data', (chunk) => {
-        this.worker.postMessage({ type: 'chunk', data: chunk })
+        // console.log(`${this.name} - Received chunk of size`, chunk.length)
+        // Ensure it's a Buffer before sending to the worker
+        const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
+        this.worker.postMessage({ type: 'chunk', data: bufferChunk })
       })
 
       this.stream.on('end', () => {
@@ -101,8 +113,8 @@ class CameraStream {
 
   stop() {
     this.aborted = true
+
     if (this.stream) {
-      this.stream.pause()
       this.stream.removeAllListeners('data')
       this.stream.removeAllListeners('end')
       this.stream.removeAllListeners('error')
@@ -111,13 +123,26 @@ class CameraStream {
     }
 
     if (this.worker) {
-      this.worker.terminate()
-      this.worker = null
+      console.log(`${this.name} - Sending stop signal to worker...`)
+      this.worker.postMessage({ type: 'stop' })
+
+      setTimeout(() => {
+        // In case the worker doesn’t exit in 1s, force it
+        if (this.worker) {
+          this.worker.terminate().then(() => {
+            console.log(`${this.name} - Worker forcefully terminated`)
+          }).catch((err) => {
+            console.error(`${this.name} - Worker termination failed:`, err)
+          })
+          this.worker = null
+        }
+      }, 1000)
     }
 
     this.frames = []
     this.frameStartIndex = 0
     this.streamActive = false
+
     console.log(`${this.name} - Stream stopped.`)
   }
 

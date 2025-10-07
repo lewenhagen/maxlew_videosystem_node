@@ -11,16 +11,22 @@ class CameraStreamManager {
    * @param {string} url - MJPEG-ström (URL)
    * @param {number} fps - Antal bilder per sekund (för delay-sync)
    */
-  addCameraStream(cameraName, url, fps = 10) {
+  addCameraStream(cameraName, url, fps = 10, force = false) {
     if (this.cameraStreams[cameraName]) {
-      console.log(`${cameraName} - Stream already exists.`)
-      return
+        if (!force) {
+        console.log(`${cameraName} - Stream already exists.`)
+        return
+        }
+
+        console.log(`${cameraName} - Replacing existing stream.`)
+        this.stopCameraStream(cameraName)
     }
 
     const stream = new CameraStream(url, fps, cameraName)
     this.cameraStreams[cameraName] = stream
     console.log(`${cameraName} - Stream started.`)
-  }
+    }
+
 
   /**
    * Hämta en aktiv kamera-stream

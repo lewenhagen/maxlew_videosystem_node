@@ -28,70 +28,80 @@
       right: 0;
     }
 
-    
+
   </style>
-<body>  
+<body>
   <div class="container">
-    <img id="1" class="dual left" alt="Cam feed 1" src=""/> 
+    <img id="1" class="dual left" alt="Cam feed 1" src=""/>
     <img id="2" class="dual right" alt="Cam feed 2" src=""/>
   </div>
-  
-</body>
-<script type="module">
-  
+  <script type="module">
+    async function updateStreams() {
+      const maxDelay = 36;
+      const leftCamDelay = parseInt('<%= left.delay %>', 10);
+      const rightCamDelay = parseInt('<%= right.delay %>', 10);
 
-  async function updateStreams() {
-    const leftCamDelay = parseInt('<%= left.delay %>')
-    const rightCamDelay = parseInt('<%= right.delay %>')
-    const maxDelay = 36;
-    const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+      // Clamp delays
+      const delays = [
+        Math.min(leftCamDelay, maxDelay),
+        Math.min(rightCamDelay, maxDelay),
+      ];
 
-    // Ensure delays are within the allowed maximum
-    const delays = [
-      Math.min(leftCamDelay, maxDelay),
-      Math.min(rightCamDelay, maxDelay),
-    ];
+      const elements = [
+        document.getElementById("1"),
+        document.getElementById("2"),
+      ];
 
-    const elements = [
-      document.getElementById("1"),
-      document.getElementById("2"),
-    ];
-
-    // Validate that all elements exist
-    elements.forEach((element, index) => {
-      if (!element) {
-        console.error(`Element with ID ${index + 1} not found!`);
-      }
-    });
-
-    // Determine the maximum delay to run the loop for all images
-    const maxIterations = Math.max(...delays);
-
-    for (let i = 0; i <= maxIterations; i++) {
-      elements.forEach((element, index) => {
-        const currentDelay = delays[index];
-
-        if (i < currentDelay) {
-          element.src = `img/hourglass/${currentDelay - i}.jpg`; // Show countdown image
-        } else if (
-          element.src !== `http://localhost:3000/stream/stream${index + 1}/${currentDelay}`
-        ) {
-          element.src = `http://localhost:3000/stream/stream${index + 1}/${currentDelay}`; // Start the stream
+      // Validate elements presence
+      elements.forEach((el, idx) => {
+        if (!el) {
+          console.error(`Element with ID ${idx + 1} not found!`);
         }
       });
 
-      await sleep(1000)
+      // Pre-cache hourglass URLs
+      const hourglassCache = {};
+      for (let d = 1; d <= maxDelay; d++) {
+        hourglassCache[d] = `img/hourglass/${d}.jpg`;
+      }
+
+      // Cache previous src to avoid redundant updates
+      const previousSrc = new Array(elements.length).fill(null);
+
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      const maxIterations = Math.max(...delays);
+
+      for (let i = 0; i <= maxIterations; i++) {
+        elements.forEach((el, idx) => {
+          if (!el) return;
+
+          const currentDelay = delays[idx];
+          let newSrc;
+
+          if (i < currentDelay) {
+            newSrc = hourglassCache[currentDelay - i];
+          } else {
+            newSrc = `http://localhost:3000/stream/stream${idx + 1}/${currentDelay}`;
+          }
+
+          if (previousSrc[idx] !== newSrc) {
+            el.src = newSrc;
+            previousSrc[idx] = newSrc;
+          }
+        });
+
+        await sleep(1000);
+      }
     }
-  }
 
-  await updateStreams()
+    await updateStreams();
 
-  document.addEventListener("keydown", function(event) {
-    let key = event.key
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "+") {
+        window.location.replace("/", true);
+      }
+    });
+  </script>
 
-    if (key == "+") {
-      window.location.replace("/", true)
-    }
-  })
-</script>
-  
+</body>

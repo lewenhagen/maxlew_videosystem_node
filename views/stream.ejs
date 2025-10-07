@@ -21,32 +21,54 @@
   </style>
 <body>
     <img class="fullscreen-image" id="stream" alt="Cam feed" />
-</body>
-  <script type="module">
-    const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
-    const delay = Math.min(parseInt('<%= delay %>'), 36)
-    const url = '<%= url %>'
 
-    const updateStreamSrc = async (delay, url) => {
-      const streamElement = document.getElementById("stream")
+    <script type="module">
+      const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+      const MAX_DELAY = 36;
 
-      if (delay > 0) {
-        for (let i = delay; i > 0; i--) {
-          streamElement.src = `img/hourglass/${i}.jpg`
-          await sleep(1000)
+      const delay = Math.min(parseInt('<%= delay %>', 10), MAX_DELAY);
+      const url = '<%= url %>';
+
+      // Cache hourglass image URLs to avoid repeated string construction
+      const hourglassCache = {};
+      for (let i = 1; i <= MAX_DELAY; i++) {
+        hourglassCache[i] = `img/hourglass/${i}.jpg`;
+      }
+
+      const updateStreamSrc = async (delay, url) => {
+        const streamElement = document.getElementById("stream");
+        if (!streamElement) {
+          console.error("Stream element not found");
+          return;
         }
-        streamElement.src = `http://localhost:3000/stream/stream1/${delay}`
-      } else {
-        streamElement.src = url
-      }
-    }
 
-    updateStreamSrc(delay, url)
+        if (delay > 0) {
+          // Countdown loop: show hourglass images starting from delay down to 1
+          for (let i = delay; i > 0; i--) {
+            const newSrc = hourglassCache[i];
+            if (streamElement.src !== newSrc) {
+              streamElement.src = newSrc;
+            }
+            await sleep(1000);
+          }
+          // After countdown, load stream URL
+          if (streamElement.src !== `http://localhost:3000/stream/stream1/${delay}`) {
+            streamElement.src = `http://localhost:3000/stream/stream1/${delay}`;
+          }
+        } else {
+          if (streamElement.src !== url) {
+            streamElement.src = url;
+          }
+        }
+      };
 
-    document.addEventListener("keydown", function(event) {
-      let key = event.key
-      if (key == "+") {
-        window.location.replace("/", true)
-      }
-    })
-  </script>
+      updateStreamSrc(delay, url);
+
+      document.addEventListener("keydown", (event) => {
+        if (event.key === "+") {
+          window.location.replace("/", true);
+        }
+      });
+    </script>
+
+</body>
