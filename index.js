@@ -92,9 +92,14 @@ app.get('/splashscreen', function (req, res) {
 })
 
 app.get('/', checkLicense, async function (req, res) {
-  for (const stream of streamManager.getStreamNames()) {
-    await streamManager.stopCameraStream(stream)
+  try {
+    streamManager.stopAllStreams()
+  } catch(error) {
+    console.error(error)
   }
+  // for (const stream of streamManager.getStreamNames()) {
+  //   await streamManager.stopCameraStream(stream)
+  // }
 
   res.render('index', { config })
 })

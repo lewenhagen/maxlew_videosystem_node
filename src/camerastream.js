@@ -7,6 +7,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 class CameraStream {
   constructor(url, fps, name) {
+    this.aborted = false
     this.frames = []
     this.frameStartIndex = 0 // ⬅️ Ny pekare för effektiv "queue"
     this.streamActive = false
@@ -79,7 +80,7 @@ class CameraStream {
     const delayMs = delayInSeconds * 1000
     const interval = 1000 / this.fps
 
-    while (true) {
+    while (!this.aborted) {
       const now = Date.now()
 
       for (let i = this.frameStartIndex; i < this.frames.length; i++) {
@@ -93,10 +94,18 @@ class CameraStream {
 
       await new Promise(resolve => setTimeout(resolve, interval))
     }
-  }
+
+    console.log(`${this.name} - Frame generator exited cleanly.`)
+}
+
 
   stop() {
+    this.aborted = true
     if (this.stream) {
+      this.stream.pause()
+      this.stream.removeAllListeners('data')
+      this.stream.removeAllListeners('end')
+      this.stream.removeAllListeners('error')
       this.stream.destroy()
       this.stream = null
     }
@@ -111,6 +120,7 @@ class CameraStream {
     this.streamActive = false
     console.log(`${this.name} - Stream stopped.`)
   }
+
 }
 
 export { CameraStream }
