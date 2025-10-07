@@ -1,186 +1,116 @@
 import fetch from 'node-fetch'
-import { setTimeout } from 'timers/promises'
+import { Worker } from 'worker_threads'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 class CameraStream {
-  constructor (url, fps, name) {
+  constructor(url, fps, name) {
     this.frames = []
-    this.dataBuffer = Buffer.alloc(0)
+    this.frameStartIndex = 0 // ⬅️ Ny pekare för effektiv "queue"
     this.streamActive = false
     this.url = url
     this.fps = fps
     this.name = name
     this.stream = null
 
-    // Start fetching the camera stream
-    this.fetchCameraStream()
+    this.start()
   }
 
-  async fetchCameraStream () {
-    if (this.streamActive) {
-      console.log(`${this.name} - Stream already active.`)
-      return
-    }
-
-    console.log(`${this.name} - Starting camera stream...`)
+  async start() {
+    if (this.streamActive) return
     this.streamActive = true
 
     try {
       const response = await fetch(this.url)
       if (!response.ok) {
-        console.error(`${this.name} - Failed to fetch camera stream: ${response.statusText}`)
+        console.error(`${this.name} - Failed to fetch stream`)
         this.streamActive = false
         return
       }
 
-      console.log(`${this.name} - Camera stream started`)
       this.stream = response.body
-      this.dataBuffer = Buffer.alloc(0)
+      this.worker = new Worker(path.join(__dirname, 'frameParserWorker.js'))
 
-      this.stream.on('data', (chunk) => {
-        this.dataBuffer = Buffer.concat([this.dataBuffer, chunk])
-        const { frames: newFrames, unprocessed } = this.extractFrames(this.dataBuffer)
-        this.frames = this.frames.concat(newFrames)
-        this.dataBuffer = unprocessed
+      this.worker.on('message', (frame) => {
+        this.frames.push(frame)
 
-        // Maintain a buffer of up to 200 seconds of frames
+        // Max antal frames att behålla
         const maxFrames = this.fps * 200
-        if (this.frames.length > maxFrames) {
-          this.frames.splice(0, this.frames.length - maxFrames)
+        const activeFrames = this.frames.length - this.frameStartIndex
+
+        if (activeFrames > maxFrames) {
+          // Trimma arrayen fysiskt bara ibland
+          this.frames = this.frames.slice(this.frameStartIndex)
+          this.frameStartIndex = 0
         }
       })
 
-      this.stream.on('error', (err) => {
-        console.error(`${this.name} - Error in stream:`, err)
-        this.streamActive = false
+      this.worker.on('error', (err) => {
+        console.error(`${this.name} - Worker error:`, err)
+      })
+
+      this.worker.on('exit', (code) => {
+        console.log(`${this.name} - Worker exited with code ${code}`)
+      })
+
+      this.stream.on('data', (chunk) => {
+        this.worker.postMessage({ type: 'chunk', data: chunk })
       })
 
       this.stream.on('end', () => {
-        console.log(`${this.name} - Stream ended.`)
+        console.log(`${this.name} - Stream ended`)
         this.streamActive = false
       })
 
-      this.stream.on('close', () => {
-        console.log(`${this.name} - Stream closed.`)
+      this.stream.on('error', (err) => {
+        console.error(`${this.name} - Stream error:`, err)
         this.streamActive = false
       })
+
     } catch (err) {
-      console.error(`${this.name} - Error fetching stream:`, err)
+      console.error(`${this.name} - Stream fetch error:`, err)
       this.streamActive = false
     }
   }
 
-  extractFrames (theBuffer) {
-    const frames = []
-    const boundary = Buffer.from('--myboundary')
-    let frameStart = this.dataBuffer.indexOf(boundary)
-
-    while (frameStart !== -1) {
-      const frameEnd = theBuffer.indexOf(boundary, frameStart + boundary.length)
-      if (frameEnd === -1) break
-
-      const frame = theBuffer.slice(frameStart, frameEnd)
-      const contentTypeIndex = frame.indexOf('Content-Type: image/jpeg')
-      if (contentTypeIndex !== -1) {
-        const jpegData = frame.slice(frame.indexOf('\r\n\r\n') + 4)
-        frames.push({ timestamp: Date.now(), data: jpegData })
-      }
-
-      frameStart = frameEnd
-    }
-
-    return { frames, unprocessed: theBuffer.slice(frameStart) }
-  }
-
-  async * getDelayedFrames (delayInSeconds) {
-    const delayMilliseconds = delayInSeconds * 1000
-    const frameInterval = 1000 / this.fps
+  async *getDelayedFrames(delayInSeconds) {
+    const delayMs = delayInSeconds * 1000
+    const interval = 1000 / this.fps
 
     while (true) {
       const now = Date.now()
 
-      // Look for a frame older than the desired delay
-      const delayedFrameIndex = this.frames.findIndex(
-        (frame) => now - frame.timestamp >= delayMilliseconds
-      )
-
-      if (delayedFrameIndex >= 0) {
-        // const delayedFrame = this.frames[delayedFrameIndex];
-
-        // Remove all frames before the delayed frame to save memory
-        this.frames.splice(0, delayedFrameIndex)
-
-        // Yield the delayed frame
-        // yield delayedFrame.data;
-        yield this.frames.shift().data
-
-        // Wait for the next frame interval to maintain consistent FPS
-        await setTimeout(frameInterval)
-      } else {
-        // If no delayed frame is found, wait briefly and try again
-        await setTimeout(frameInterval)
+      for (let i = this.frameStartIndex; i < this.frames.length; i++) {
+        const frame = this.frames[i]
+        if (now - frame.timestamp >= delayMs) {
+          this.frameStartIndex = i + 1
+          yield frame.data
+          break
+        }
       }
+
+      await new Promise(resolve => setTimeout(resolve, interval))
     }
   }
 
-  stopCameraStream () {
+  stop() {
     if (this.stream) {
-      console.log(`${this.name} - Stopping camera stream...`)
       this.stream.destroy()
       this.stream = null
     }
+
+    if (this.worker) {
+      this.worker.terminate()
+      this.worker = null
+    }
+
     this.frames = []
-    this.dataBuffer = Buffer.alloc(0) // Clear the data buffer
+    this.frameStartIndex = 0
     this.streamActive = false
-    console.log(`${this.name} - Camera stream stopped and state reset.`)
+    console.log(`${this.name} - Stream stopped.`)
   }
 }
 
-// CameraStreamManager to manage multiple camera streams
-class CameraStreamManager {
-  constructor () {
-    this.cameraStreams = {} // Holds the streams for all cameras
-  }
-
-  // Initialize and start a stream for a specific camera
-  addCameraStream (cameraName, url, fps) {
-    if (this.cameraStreams[cameraName]) {
-      console.log(`${cameraName} - Stream already exists.`)
-      return
-    }
-
-    this.cameraStreams[cameraName] = new CameraStream(url, fps, cameraName)
-    console.log(`${cameraName} - Camera stream added.`)
-  }
-
-  // Fetch the camera stream from the global cameraStreams object
-  getCameraStream (cameraName) {
-    return this.cameraStreams[cameraName]
-  }
-
-  // Stop the camera stream for a specific camera
-  async stopCameraStream (cameraName) {
-    if (this.cameraStreams[cameraName]) {
-      this.cameraStreams[cameraName].stopCameraStream()
-      delete this.cameraStreams[cameraName]
-      console.log(`${cameraName} - Camera stream stopped.`)
-    } else {
-      console.log(`${cameraName} - Stream not found.`)
-    }
-  }
-
-  // Get all streams available in the manager
-  getAllStreams () {
-    return this.cameraStreams
-  }
-
-  getStreamNames () {
-    const result = []
-    for (const stream in this.cameraStreams) {
-      result.push(stream)
-    }
-
-    return result
-  }
-}
-
-export { CameraStreamManager }
+export { CameraStream }

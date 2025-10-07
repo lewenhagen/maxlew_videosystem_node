@@ -17,9 +17,10 @@
       object-position: center;
       display: block;
     }
+
   </style>
 <body>
-    <img class="fullscreen-image" id="stream" alt="Cam feed" /> 
+    <img class="fullscreen-image" id="stream" alt="Cam feed" />
 </body>
   <script type="module">
     const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
@@ -34,7 +35,7 @@
           streamElement.src = `img/hourglass/${i}.jpg`
           await sleep(1000)
         }
-        streamElement.src = `http://localhost:3000/stream/stream1/${delay}`   
+        streamElement.src = `http://localhost:3000/stream/stream1/${delay}`
       } else {
         streamElement.src = url
       }

@@ -5,7 +5,7 @@
       transform: rotate(45deg);
       height: 25px;
       width: 12px;
-      margin-left: 5%; 
+      margin-left: 5%;
       border-bottom: 7px solid #78b13f;
       border-right: 7px solid #78b13f;
     }
@@ -18,7 +18,7 @@
   <% } %> -->
   <!-- END OF DEV PURPOSE SHIT -->
   <div class="small_logo">
-    <img src="img/maxlew_logo.svg" alt="maxlew logo">
+    <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
   </div>
   <div class="small_logo2">
     <img src="img/kgf_logo.png" alt="kgf logo">
@@ -31,12 +31,12 @@
           <li><%=parseInt(index)+1%>. <%=config[index].name%></li>
         <% } %>
         <hr style="margin:10px 0 10px 0">
-        <li>+. Main menu </li>
+        <li>+. Huvudmeny </li>
         </ul>
         <h4 style="margin-top: 50px;">Välj 1 eller 2 kameror och tryck Enter</h4>
     </div>
   </div>
-  
+
   <!-- <img id="camerafeed" />
    -->
   <script>
@@ -52,16 +52,16 @@
         checkmark.id = cam
 
         let chosenCam = document.getElementsByTagName("li")[cam]
-        
+
         if (chosenCameras.length < 2) {
           if (!chosenCameras.includes(cam)) {
             chosenCameras.push(cam)
             chosenCam.appendChild(checkmark)
           } else{
             chosenCameras.pop(cam)
-            document.getElementById(cam).remove();     
+            document.getElementById(cam).remove();
           }
-          
+
         } else if (chosenCameras.includes(cam)) {
           chosenCameras.splice(chosenCameras.indexOf(cam), 1)
           document.getElementById(cam).remove();
@@ -70,7 +70,7 @@
 
       document.addEventListener("keydown", function(event) {
           let key = event.key
-          console.log(key)
+
           if (parseInt(key) > 0 && parseInt(key) <= cameras.length) {
               selectCamera(key)
           } else if (key == "+") {
@@ -83,5 +83,5 @@
           }
       })
   </script>
-  
+
   <%- include("footer.ejs") %>

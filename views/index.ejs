@@ -20,7 +20,7 @@
         </ul>
     </div>
   </div>
-  <script> 
+  <script>
     let menuTitle = document.getElementById("menuTitle")
     let menuContent = document.getElementById("menuContent")
 
@@ -53,8 +53,12 @@
         // Easteregg
         new Audio('sound/tf.mp3').play()
         break
+      case "m":
+        // Admin
+        window.location.replace("/admin", true)
+        break
       }
     })
   </script>
-  
+
   <%- include("footer.ejs") %>

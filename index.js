@@ -7,7 +7,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { readFile, writeFile } from 'fs/promises'
 import open from 'open'
-import { CameraStreamManager } from './src/camerastream.js'
+// import { CameraStreamManager } from './src/camerastream.js'
+import { CameraStreamManager } from './src/cameraStreamManager.js'
 import { URL } from 'url'
 import { exec } from 'node:child_process'
 
@@ -79,7 +80,11 @@ app.post("/checkcode", async function (req, res) {
     console.log("incorrect code")
     res.render('license-expired', {message: "Fel kod."})
   }
-  
+
+})
+
+app.get('/admin', function (req, res) {
+  res.render('admin')
 })
 
 app.get('/splashscreen', function (req, res) {
@@ -106,7 +111,7 @@ app.post('/shutdown', function (req, res) {
     console.log("Shutting down")
     exec('sudo shutdown -h now')
     process.exit()
-    
+
   } else {
     console.log("Wrong number motherfucker")
   }
