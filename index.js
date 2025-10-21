@@ -119,9 +119,9 @@ app.get('/shutdown', function (req, res) {
 // })
 app.post("/shutdown", (req, res) => {
   const { shutdown, secret } = req.body;
-
+  (req.ip !== '127.0.0.1' && req.ip !== '::1') && res.send("Forbidden")
   if (parseInt(shutdown) === parseInt(secret)) {
-    res.send("✅ Shutting down system...");
+    res.send("Shutting down system...");
 
     // Wait a moment so response completes before poweroff
     setTimeout(() => {
@@ -130,8 +130,8 @@ app.post("/shutdown", (req, res) => {
       });
     }, 1000);
   } else {
-    console.log("❌ Wrong number");
-    res.status(403).send("Forbidden");
+    console.log("Wrong number");
+    res.redirect("/shutdown")
   }
 });
 
