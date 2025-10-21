@@ -23,7 +23,7 @@ function decryptFrom8Digits(eightDigitNumber, inputString, secretKey) {
       match = true
   }
 
-  return match; // In this contrived example, we return the original.
+  return match
 }
 
 async function checkValidity() {
