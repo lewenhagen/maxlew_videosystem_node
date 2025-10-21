@@ -119,9 +119,11 @@ app.get('/shutdown', function (req, res) {
 // })
 app.post("/shutdown", (req, res) => {
   const { shutdown, secret } = req.body;
-  (req.ip !== '127.0.0.1' && req.ip !== '::1') && res.send("Forbidden")
+  if (req.ip !== '127.0.0.1' && req.ip !== '::1') {
+    res.send("Forbidden")
+  }
   if (parseInt(shutdown) === parseInt(secret)) {
-    res.send("Shutting down system...");
+    res.send("<h1>Shutting down system...</h1>");
 
     // Wait a moment so response completes before poweroff
     setTimeout(() => {
