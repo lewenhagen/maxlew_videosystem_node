@@ -83,6 +83,7 @@ app.post("/checkcode", async function (req, res) {
 })
 
 app.get('/splashscreen', function (req, res) {
+  res.setHeader('Content-Language', 'sv')
   res.render('splashscreen')
 })
 
@@ -90,7 +91,7 @@ app.get('/', checkLicense, async function (req, res) {
   for (const stream of streamManager.getStreamNames()) {
     await streamManager.stopCameraStream(stream)
   }
-
+  res.setHeader('Content-Language', 'sv')
   res.render('index', { config })
 })
 
