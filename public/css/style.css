@@ -15,7 +15,7 @@ body {
     left:0;
     right:0;
     bottom:0;
-    font-size: 40px;
+    font-size: 1.8em;
     background: linear-gradient(135deg, #dff6ff, #e6f7ff, #f3e8ff, #fff7f2);
       background-size: 400% 400%;
       animation: pastelMove 5s ease infinite;
