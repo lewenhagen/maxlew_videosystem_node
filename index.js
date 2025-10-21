@@ -7,7 +7,6 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 import { readFile, writeFile } from 'fs/promises'
 import open from 'open'
-// import { CameraStreamManager } from './src/camerastream.js'
 import { CameraStreamManager } from './src/cameraStreamManager.js'
 import { URL } from 'url'
 import { exec } from 'node:child_process'
@@ -80,11 +79,7 @@ app.post("/checkcode", async function (req, res) {
     console.log("incorrect code")
     res.render('license-expired', {message: "Fel kod."})
   }
-
-})
-
-app.get('/admin', function (req, res) {
-  res.render('admin')
+  
 })
 
 app.get('/splashscreen', function (req, res) {
@@ -92,14 +87,9 @@ app.get('/splashscreen', function (req, res) {
 })
 
 app.get('/', checkLicense, async function (req, res) {
-  try {
-    streamManager.stopAllStreams()
-  } catch(error) {
-    console.error(error)
+  for (const stream of streamManager.getStreamNames()) {
+    await streamManager.stopCameraStream(stream)
   }
-  // for (const stream of streamManager.getStreamNames()) {
-  //   await streamManager.stopCameraStream(stream)
-  // }
 
   res.render('index', { config })
 })
@@ -111,14 +101,31 @@ app.get('/shutdown', function (req, res) {
   res.render('shutdown', data)
 })
 
+// app.post("/shutdown", async (req, res) => {
+//   if (req.ip !== '127.0.0.1' && req.ip !== '::1') {
+//     return res.status(403).send("Forbidden");
+//   }
+//   if (parseInt(req.body.shutdown) === parseInt(req.body.secret)) {
+//     exec("sudo ./shutdown-system.sh", (error) => {
+//       if (error) {
+//         console.error("Shutdown failed:", error);
+//         return res.status(500).send("Failed to shut down");
+//       }
+//       res.send("Shutting down...");
+//     })
+//   } else {
+//     console.log("Wrong number")
+//   }
+// })
 app.post('/shutdown', function (req, res) {
   if (parseInt(req.body.shutdown) === parseInt(req.body.secret)) {
-    console.log("Shutting down")
-    exec('sudo shutdown -h now')
-    process.exit()
-
+    // console.log("Shutting down")
+    res.send("Hutting down...")
+    exec('systemctl poweroff')
+    // process.exit()
+    
   } else {
-    console.log("Wrong number motherfucker")
+    console.log("Wrong number")
   }
   res.redirect('/shutdown')
 })
