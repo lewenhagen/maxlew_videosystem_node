@@ -117,18 +117,23 @@ app.get('/shutdown', function (req, res) {
 //     console.log("Wrong number")
 //   }
 // })
-app.post('/shutdown', function (req, res) {
-  if (parseInt(req.body.shutdown) === parseInt(req.body.secret)) {
-    // console.log("Shutting down")
-    res.send("Hutting down...")
-    exec('systemctl poweroff')
-    // process.exit()
-    
+app.post("/shutdown", (req, res) => {
+  const { shutdown, secret } = req.body;
+
+  if (parseInt(shutdown) === parseInt(secret)) {
+    res.send("✅ Shutting down system...");
+
+    // Wait a moment so response completes before poweroff
+    setTimeout(() => {
+      exec("sudo /bin/systemctl poweroff", (error) => {
+        if (error) console.error("Shutdown failed:", error);
+      });
+    }, 1000);
   } else {
-    console.log("Wrong number")
+    console.log("❌ Wrong number");
+    res.status(403).send("Forbidden");
   }
-  res.redirect('/shutdown')
-})
+});
 
 app.get('/singlecam', function (req, res) {
   res.render('single-cam', { config })
