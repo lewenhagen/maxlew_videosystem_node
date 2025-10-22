@@ -2,26 +2,29 @@
 
 
   <span id="cameras" style="display:none"><%= JSON.stringify(config) %></span>
-  
-  <div class="small_logo">
-    <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
-  </div>
-  <div class="small_logo2">
-    <img src="img/kgf_logo.png" alt="kgf logo">
-  </div>
-  <div class="is-rounded" style="width: 50%; margin: 0 auto;margin-top: 10%">
-    <div class="lists">
-      <h1>Doublecam</h1>
-      <ul>
-        <% for (const index in config) { %>
-          <li><%=parseInt(index)+1%>. <%=config[index].name%></li>
-        <% } %>
-        <hr style="margin:10px 0 10px 0">
-        <li>+. Huvudmeny </li>
-        </ul>
-        <h4 style="margin-top: 50px;">Välj 1 eller 2 kameror och tryck Enter</h4>
+  <div class="wrapper">
+    <div class="top-row">
+      <div class="small_logo">
+        <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
+      </div>
+      <div class="small_logo2">
+        <img src="img/kgf_logo.png" alt="kgf logo">
+      </div>
     </div>
-  </div>
+    <div class="row">
+      <div class="menu">
+        <h1>Doublecam</h1>
+        <ul>
+          <% for (const index in config) { %>
+            <li><%=parseInt(index)+1%>. <%=config[index].name%></li>
+          <% } %>
+          <hr style="margin:10px 0 10px 0">
+          <li>+. Huvudmeny </li>
+          </ul>
+          <h4 style="margin-top: 50px;">Välj 1 eller 2 kameror och tryck Enter</h4>
+      </div>
+    </div>
+    
 
   <script>
       let cameras = JSON.parse(document.getElementById("cameras").innerText)
@@ -69,3 +72,4 @@
   </script>
 
   <%- include("footer.ejs") %>
+</div>
