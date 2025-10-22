@@ -1,23 +1,30 @@
 <%- include("header.ejs") %>
-
-  <div class="small_logo">
-    <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
-  </div>
-  <div class="small_logo2">
-    <img src="img/kgf_logo.png" alt="kgf logo">
-  </div>
-  <div class="is-rounded" style="width: 50%; margin: 0 auto;margin-top: 10%">
-    <div class="lists">
-      <h1>Huvudmeny</h1>
-      <ul>
+  <div class="wrapper">
+    
+    <div class="top-row">
+      <div class="small_logo">
+        <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
+      </div>
+      <div class="small_logo2">
+        <img src="img/kgf_logo.png" alt="kgf logo">
+      </div>
+    </div>
+    <div class="row">
+      <div class="menu">
+        <h1>Huvudmeny</h1>
+        <ul>
           <li lang="en">1. Singlecam</li>
           <li lang="en">2. Singlecam Quadview</li>
           <li lang="en">3. Doublecam</li>
           <hr style="margin:10px 0 10px 0">
           <li>*. Stäng av systemet </li>
         </ul>
+      </div>
     </div>
   </div>
+  
+  <!-- <div class="" style="width: 50%; margin: 0 auto; margin-top: 10%">-->
+  
   <script>
     let menuTitle = document.getElementById("menuTitle")
     let menuContent = document.getElementById("menuContent")

@@ -42,34 +42,6 @@ h1 {
     justify-content: center;
 }
 
-.wrapper {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  width: 100vw;
-}
-
-.row {
-  display: flex;
-  flex: 1;
-  flex-direction: row;
-  justify-content: center;
-}
-
-.top-row {
-  display: flex;
-  flex: 1;
-  flex-direction: row;
-  justify-content: space-between;
-}
-
-.col {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
 .admin-config {
     display: flex;
     flex-direction: row;
@@ -80,6 +52,18 @@ h1 {
     text-align: center;
 }
 
+
+.dual {
+    height: 100%;
+    width: 50%;
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    overflow-x: hidden;
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-position: center center;
+}
 
 .fullscreen {
     height: 100%;
@@ -94,16 +78,16 @@ h1 {
 }
 
 
-.checkmark {
-  display: inline-block;
-  transform: rotate(45deg);
-  height: 25px;
-  width: 12px;
-  margin-left: 5%;
-  border-bottom: 7px solid #78b13f;
-  border-right: 7px solid #78b13f;
+
+.left {
+    left: 0;
+    object-fit: cover;
 }
 
+.right {
+    object-fit: cover;
+    right: 0;
+}
 
 .quarter {
     height: 50%;

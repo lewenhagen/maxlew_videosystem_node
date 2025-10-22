@@ -1,22 +1,8 @@
 <%- include("header.ejs") %>
-<style>
-  .checkmark {
-      display: inline-block;
-      transform: rotate(45deg);
-      height: 25px;
-      width: 12px;
-      margin-left: 5%;
-      border-bottom: 7px solid #78b13f;
-      border-right: 7px solid #78b13f;
-    }
-</style>
+
 
   <span id="cameras" style="display:none"><%= JSON.stringify(config) %></span>
-  <!-- DEV PURPOSE ONLY -->
-  <!-- <% for (const cam in config) { %>
-    (<%=parseInt(cam)+1%>) <%= config[cam].name %>, <%= config[cam].ip %>
-  <% } %> -->
-  <!-- END OF DEV PURPOSE SHIT -->
+  
   <div class="small_logo">
     <img src="img/maxlew_logo_2025.svg" alt="maxlew logo">
   </div>
@@ -37,8 +23,6 @@
     </div>
   </div>
 
-  <!-- <img id="camerafeed" />
-   -->
   <script>
       let cameras = JSON.parse(document.getElementById("cameras").innerText)
       let chosenCameras = []
