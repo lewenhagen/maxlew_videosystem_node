@@ -1,27 +1,22 @@
 import fetch from 'node-fetch'
-import { Worker } from 'worker_threads'
+import { Worker, isMainThread, parentPort } from 'worker_threads'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import { pathToFileURL } from 'url'
+
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
-
-const workerPath = pathToFileURL(path.join(__dirname, 'frameParserWorker.js')).href
-// import { Readable } from 'stream'
-
-
-// const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 class CameraStream {
   constructor(url, fps, name) {
     this.aborted = false
     this.frames = []
-    this.frameStartIndex = 0 // ⬅️ Ny pekare för effektiv "queue"
+    this.frameStartIndex = 0
     this.streamActive = false
     this.url = url
     this.fps = fps
     this.name = name
     this.stream = null
+    this.worker = null
 
     this.start()
   }
@@ -39,19 +34,21 @@ class CameraStream {
       }
 
       this.stream = response.body
+      this.stream.pause() // pause until worker is ready
 
       this.worker = new Worker(path.resolve(__dirname, 'frameParserWorker.js'), { type: 'module' })
-      // console.log(`${this.name} - Worker created`)
+
+      // Wait until worker is ready
+      this.worker.once('online', () => {
+        console.log(`${this.name} - Worker online, resuming stream`)
+        this.stream.resume()
+      })
 
       this.worker.on('message', (frame) => {
         this.frames.push(frame)
-
-        // Max antal frames att behålla
         const maxFrames = this.fps * 200
         const activeFrames = this.frames.length - this.frameStartIndex
-
         if (activeFrames > maxFrames) {
-          // Trimma arrayen fysiskt bara ibland
           this.frames = this.frames.slice(this.frameStartIndex)
           this.frameStartIndex = 0
         }
@@ -66,10 +63,9 @@ class CameraStream {
       })
 
       this.stream.on('data', (chunk) => {
-        // console.log(`${this.name} - Received chunk of size`, chunk.length)
-        // Ensure it's a Buffer before sending to the worker
         const bufferChunk = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk)
-        this.worker.postMessage({ type: 'chunk', data: bufferChunk })
+        // Send the buffer as a transferable to avoid copy overhead
+        this.worker.postMessage({ type: 'chunk', data: bufferChunk.buffer }, [bufferChunk.buffer])
       })
 
       this.stream.on('end', () => {
@@ -94,7 +90,6 @@ class CameraStream {
 
     while (!this.aborted) {
       const now = Date.now()
-
       for (let i = this.frameStartIndex; i < this.frames.length; i++) {
         const frame = this.frames[i]
         if (now - frame.timestamp >= delayMs) {
@@ -103,13 +98,11 @@ class CameraStream {
           break
         }
       }
-
       await new Promise(resolve => setTimeout(resolve, interval))
     }
 
     console.log(`${this.name} - Frame generator exited cleanly.`)
-}
-
+  }
 
   stop() {
     this.aborted = true
@@ -127,7 +120,6 @@ class CameraStream {
       this.worker.postMessage({ type: 'stop' })
 
       setTimeout(() => {
-        // In case the worker doesn’t exit in 1s, force it
         if (this.worker) {
           this.worker.terminate().then(() => {
             console.log(`${this.name} - Worker forcefully terminated`)
@@ -142,10 +134,8 @@ class CameraStream {
     this.frames = []
     this.frameStartIndex = 0
     this.streamActive = false
-
     console.log(`${this.name} - Stream stopped.`)
   }
-
 }
 
 export { CameraStream }

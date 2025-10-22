@@ -2,7 +2,7 @@ import { CameraStream } from './camerastream.js'
 
 class CameraStreamManager {
   constructor() {
-    this.cameraStreams = {} // Kamera-namn → CameraStream-instans
+    this.cameraStreams = {} 
   }
 
   /**
