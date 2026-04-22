@@ -10,10 +10,8 @@ import open from 'open'
 import { CameraStreamManager } from './src/cameraStreamManager.js'
 import { URL } from 'url'
 import { exec } from 'node:child_process'
-
 import { checkValidity, testCode } from './src/licensecheck.js'
-import req from 'express/lib/request.js'
-import { nextTick } from 'node:process'
+
 
 dotenv.config()
 
@@ -199,12 +197,24 @@ app.post('/selectbox-delay-dual-left/', function (req, res) {
   res.render('selectbox-delay-dual-right', dualcams.right)
 })
 
+// app.post('/stream-dual', function (req, res) {
+//   dualcams.right.delay = req.body.delay
+
+//   streamManager.addCameraStream('stream1', dualcams.left.url, 30)
+//   streamManager.addCameraStream('stream2', dualcams.right.url, 30)
+
+//   res.render('stream-dual', dualcams)
+// })
+// ---------------------------------------------------------------------------
+// Dual camera stream
+// ---------------------------------------------------------------------------
 app.post('/stream-dual', function (req, res) {
   dualcams.right.delay = req.body.delay
-
-  streamManager.addCameraStream('stream1', dualcams.left.url, 30)
-  streamManager.addCameraStream('stream2', dualcams.right.url, 30)
-
+ 
+  // Each camera gets its own stream (different URLs = different connections)
+  streamManager.addCameraStream('stream1', dualcams.left.url, 30, false)
+  streamManager.addCameraStream('stream2', dualcams.right.url, 30, false)
+ 
   res.render('stream-dual', dualcams)
 })
 
@@ -223,79 +233,174 @@ app.get('/selectbox-delay-dual-right/:left/:right?', function (req, res) {
   res.render('selectbox-delay-dual-left', data)
 })
 
+// app.get('/stream', async function (req, res) {
+//   const ip = config[req.query.cam].ip
+//   const name = config[req.query.cam].name
+//   const user = process.env.VS_USER
+//   const pass = process.env.VS_PASS
+//   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
+//   const data = {
+//     delay: req.query.delay,
+//     url,
+//     name
+//   }
+//   streamManager.addCameraStream('stream1', url, 30)
+
+//   res.render('stream', data)
+// })
+// ---------------------------------------------------------------------------
+// Single camera stream (with delay)
+// ---------------------------------------------------------------------------
 app.get('/stream', async function (req, res) {
   const ip = config[req.query.cam].ip
   const name = config[req.query.cam].name
-  const user = process.env.VS_USER
-  const pass = process.env.VS_PASS
   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
   const data = {
     delay: req.query.delay,
     url,
     name
   }
-  streamManager.addCameraStream('stream1', url, 30)
+ 
+  // getOrCreateStream ensures only one HTTP connection per camera URL
+  // streamManager.getOrCreateStream(url, 30)
+  streamManager.addCameraStream('stream1', url, 30, false)
 
   res.render('stream', data)
 })
 
+// app.get('/stream-quad', async function (req, res) {
+//   const ip = config[req.query.cam].ip
+//   const name = config[req.query.cam].name
+//   const user = process.env.VS_USER
+//   const pass = process.env.VS_PASS
+//   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
+//   const data = {
+//     delay: req.query.delay,
+//     delta: req.query.delta,
+//     url,
+//     name
+//   }
+
+//   streamManager.addCameraStream('stream1', url, 30)
+//   streamManager.addCameraStream('stream2', url, 30)
+//   streamManager.addCameraStream('stream3', url, 30)
+//   streamManager.addCameraStream('stream4', url, 30)
+
+//   res.render('stream-quad', data)
+// })
+// ---------------------------------------------------------------------------
+// Quad view — same camera, up to 4 different delays
+// ---------------------------------------------------------------------------
 app.get('/stream-quad', async function (req, res) {
   const ip = config[req.query.cam].ip
   const name = config[req.query.cam].name
-  const user = process.env.VS_USER
-  const pass = process.env.VS_PASS
   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
   const data = {
     delay: req.query.delay,
     delta: req.query.delta,
     url,
-    name
+    name,
+    streamName: 'stream1'
   }
-
-  streamManager.addCameraStream('stream1', url, 30)
-  streamManager.addCameraStream('stream2', url, 30)
-  streamManager.addCameraStream('stream3', url, 30)
-  streamManager.addCameraStream('stream4', url, 30)
-
+ 
+  // One connection to the camera — all 4 quad panels read from the same buffer
+  // streamManager.getOrCreateStream(url, 30)
+  streamManager.addCameraStream('stream1', url, 30, false)
+ 
   res.render('stream-quad', data)
 })
 
+// app.get('/stream/:streamName/:delay', async (req, res) => {
+//   const streamName = req.params.streamName
+//   const delay = req.params.delay
+//   const stream = streamManager.getCameraStream(streamName)
+
+//   if (!stream) {
+//     return res.status(404).send(`Stream for ${streamName} not found.`)
+//   }
+
+//   console.log(`Stream requested for ${streamName}.`)
+
+//   res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=--myboundary; Cache-Control: no-cache;')
+
+//   const delayedFramesGenerator = stream.getDelayedFrames(delay)
+
+//   let isClientConnected = true
+
+//   req.on('close', () => {
+//     console.log(`Client disconnected from ${streamName} stream.`)
+//     isClientConnected = false
+//   })
+
+//   try {
+//     for await (const frame of delayedFramesGenerator) {
+//       if (!isClientConnected) break
+
+//       res.write('--myboundary\r\n')
+//       res.write(`Content-Length: ${frame.length}\r\n\r\n`)
+//       res.write(frame)
+//       res.write('\r\n')
+//     }
+//   } catch (error) {
+//     console.error(`Error streaming frames for ${streamName}:`, error)
+//   } finally {
+//     res.end()
+//   }
+// })
+
 app.get('/stream/:streamName/:delay', async (req, res) => {
+  // const streamName = decodeURIComponent(req.params.streamName)
   const streamName = req.params.streamName
-  const delay = req.params.delay
+  // const streamName = decodeURIComponent(req.params.streamName)
+  // console.log('Looking up stream key:', streamName)
+  // console.log('Available keys:', streamManager.getStreamNames())
+  const delay = parseFloat(req.params.delay) // explicit parse — never rely on coercion
+ 
+  // Try direct name lookup first, then the url:: prefixed key
+  // const stream = streamManager.getCameraStream(streamName)
+    // ?? streamManager.getCameraStream(`url::${streamName}`)
   const stream = streamManager.getCameraStream(streamName)
-
+ 
   if (!stream) {
-    return res.status(404).send(`Stream for ${streamName} not found.`)
+    return res.status(404).send(`Stream '${streamName}' not found.`)
   }
-
-  console.log(`Stream requested for ${streamName}.`)
-
-  res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=--myboundary; Cache-Control: no-cache;')
-
-  const delayedFramesGenerator = stream.getDelayedFrames(delay)
-
+ 
+  console.log(`${streamName} - Client connected, delay: ${delay}s`)
+ 
+  res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=--myboundary')
+  res.setHeader('Cache-Control', 'no-cache')
+ 
   let isClientConnected = true
-
   req.on('close', () => {
-    console.log(`Client disconnected from ${streamName} stream.`)
+    console.log(`${streamName} - Client disconnected (delay: ${delay}s)`)
     isClientConnected = false
   })
-
+ 
+  // getDelayedFrames registers/unregisters the consumer automatically
+  const delayedFramesGenerator = stream.getDelayedFrames(delay)
+ 
   try {
     for await (const frame of delayedFramesGenerator) {
       if (!isClientConnected) break
-
+ 
       res.write('--myboundary\r\n')
+      res.write(`Content-Type: image/jpeg\r\n`)
       res.write(`Content-Length: ${frame.length}\r\n\r\n`)
       res.write(frame)
       res.write('\r\n')
     }
-  } catch (error) {
-    console.error(`Error streaming frames for ${streamName}:`, error)
+  } catch (err) {
+    console.error(`${streamName} - Streaming error:`, err)
   } finally {
     res.end()
   }
+})
+
+// ---------------------------------------------------------------------------
+// Health check endpoint — useful for monitoring on the NUC
+// ---------------------------------------------------------------------------
+app.get('/health', function (req, res) {
+  res.json(streamManager.getStreamHealth())
 })
 
 // Start server

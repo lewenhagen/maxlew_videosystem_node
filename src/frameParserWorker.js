@@ -1,7 +1,7 @@
 import { parentPort } from 'worker_threads'
 
 console.log('[Worker] Started')
-
+let latestTimestamp = Date.now() // fallback
 // Internal buffer to accumulate chunks
 let buffer = Buffer.alloc(0)
 const boundary = Buffer.from('--myboundary')
@@ -35,8 +35,8 @@ parentPort.on('message', (msg) => {
     }
 
     if (msg.type === 'chunk') {
+      latestTimestamp = msg.timestamp  // store it
       const chunk = Buffer.isBuffer(msg.data) ? msg.data : Buffer.from(msg.data)
-
       buffer = Buffer.concat([buffer, chunk])
       parseFrames()
     } else {
@@ -71,7 +71,7 @@ function parseFrames() {
         const jpegData = Buffer.from(frame.slice(jpegStart)) // safe copy
 
         parentPort.postMessage({
-          timestamp: Date.now(),
+          timestamp: latestTimestamp,  // use arrival time, not parse time
           data: jpegData,
         })
       }
