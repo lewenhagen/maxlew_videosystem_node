@@ -56,7 +56,7 @@ check_prerequisities()
     [[ ! $(command -v curl) ]] && echo -e "Curl is ${RED}not installed${NC}" || echo -e "Curl${GREEN} is installed${NC}"
     [[ ! $(command -v jq) ]] && echo -e "jq is ${RED}not installed${NC}" || echo -e "jq${GREEN} is installed${NC}"
     [[ ! $(command -v nmap) ]] && echo -e "nmap is ${RED}not installed${NC}" || echo -e "nmap${GREEN} is installed${NC}"
-    [[ ! $(command -v xdotool) ]] && echo -e "xdotool is ${RED}not installed${NC}" || echo -e "xdotool${GREEN} is installed${NC}"
+    # [[ ! $(command -v xdotool) ]] && echo -e "xdotool is ${RED}not installed${NC}" || echo -e "xdotool${GREEN} is installed${NC}"
     [[ ! $(command -v node) ]] && echo -e "node is ${RED}not installed${NC}" || echo -e "Node${GREEN} is installed${NC}"
     [[ ! $(command -v chromium) ]] && echo -e "Chromium is ${RED}not installed${NC}" || echo -e "Chromium${GREEN} is installed${NC}"
 }

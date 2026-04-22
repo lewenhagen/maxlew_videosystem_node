@@ -116,23 +116,46 @@ app.get('/shutdown', function (req, res) {
 //     console.log("Wrong number")
 //   }
 // })
+// app.post("/shutdown", (req, res) => {
+//   const { shutdown, secret } = req.body;
+//   if (req.ip !== '127.0.0.1' && req.ip !== '::1') {
+//     res.send("Forbidden")
+//   }
+//   if (parseInt(shutdown) === parseInt(secret)) {
+//     res.send("<h1>Shutting down system...</h1>");
+
+//     // Wait a moment so response completes before poweroff
+//     setTimeout(() => {
+//       exec("sudo /bin/systemctl poweroff", (error) => {
+//         if (error) console.error("Shutdown failed:", error);
+//       });
+//     }, 1000);
+//   } else {
+//     console.log("Wrong number");
+//     res.redirect("/shutdown")
+//   }
+// });
 app.post("/shutdown", (req, res) => {
   const { shutdown, secret } = req.body;
-  if (req.ip !== '127.0.0.1' && req.ip !== '::1') {
-    res.send("Forbidden")
+
+  // Bug 1: missing return — falls through to shutdown logic even when forbidden
+  const localIPs = ['127.0.0.1', '::1', '::ffff:127.0.0.1']
+  if (!localIPs.includes(req.ip)) {
+    return res.status(403).send("Forbidden")
   }
+
   if (parseInt(shutdown) === parseInt(secret)) {
     res.send("<h1>Shutting down system...</h1>");
 
-    // Wait a moment so response completes before poweroff
     setTimeout(() => {
       exec("sudo /bin/systemctl poweroff", (error) => {
         if (error) console.error("Shutdown failed:", error);
       });
     }, 1000);
   } else {
+    // Bug 2: missing return — if somehow both branches run, res.redirect after res.send crashes
     console.log("Wrong number");
-    res.redirect("/shutdown")
+    return res.redirect("/shutdown")
   }
 });
 

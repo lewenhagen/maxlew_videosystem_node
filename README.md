@@ -5,6 +5,11 @@
 * Install Debian. Right now it is Debian 12.
 * Create a user without password
 * When finished, add user to sudoers
+```
+echo "maxlew ALL=(ALL) NOPASSWD: /bin/systemctl poweroff" | sudo tee /etc/sudoers.d/maxlew-poweroff
+sudo chmod 440 /etc/sudoers.d/maxlew-poweroff
+```
+
 ```code
 $ su -
 # nano /etc/sudoers
