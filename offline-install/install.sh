@@ -2,7 +2,8 @@
 #
 # Maxlew Videosystem - offline kiosk installer
 #
-# For a fresh Debian 12 (bookworm, amd64) WITHOUT a desktop. No internet needed.
+# For a fresh Debian (the release the bundle was built for, amd64) WITHOUT a desktop.
+# No internet needed.
 # Put this file and maxlew-offline-bundle.tar (made by make-offline-bundle.sh)
 # in the same folder, for example on a USB stick, and run as root:
 #
@@ -295,8 +296,9 @@ xset -dpms
 xset s off
 xset s noblank
 
-# Hide the mouse cursor
-unclutter -idle 0 -root &
+# Hide the mouse cursor (Debian 13 names the program unclutter-classic)
+UNCLUTTER="$(command -v unclutter-classic || command -v unclutter || true)"
+[ -n "$UNCLUTTER" ] && "$UNCLUTTER" -idle 0 -root &
 
 openbox-session &
 

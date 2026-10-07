@@ -11,8 +11,8 @@
 #
 # Needs: bash, apt-get, apt-ftparchive (package apt-utils), curl, tar, xz, sha256sum.
 # It does not need root, does not touch the system, and does not have to run on
-# Debian 12: packages are resolved straight against the Debian 12 (bookworm)
-# archive with a private apt state.
+# Debian: packages are resolved straight against the Debian 13 (trixie) archive
+# with a private apt state. DEBIAN_RELEASE=bookworm builds a Debian 12 bundle.
 #
 # Usage: ./make-offline-bundle.sh [output-dir]
 
@@ -23,7 +23,7 @@ REPO_DIR="$(cd "$HERE/.." && pwd)"
 OUT_DIR="${1:-$HERE/dist}"
 
 NODE_MAJOR="${NODE_MAJOR:-24}"
-DEBIAN_RELEASE="bookworm"
+DEBIAN_RELEASE="${DEBIAN_RELEASE:-trixie}"   # Debian 13; bookworm = Debian 12
 ARCH="amd64"
 MIRROR="${DEBIAN_MIRROR:-https://deb.debian.org/debian}"
 SECURITY_MIRROR="${DEBIAN_SECURITY_MIRROR:-https://security.debian.org/debian-security}"
@@ -107,17 +107,15 @@ APT_DIR="$WORK/apt"
 mkdir -p "$APT_DIR/state/lists/partial" "$APT_DIR/cache/archives/partial"
 : > "$APT_DIR/status"
 
-if [[ -f /usr/share/keyrings/debian-archive-keyring.gpg ]]; then
-  SIGN="signed-by=/usr/share/keyrings/debian-archive-keyring.gpg"
-else
-  SIGN="trusted=yes"
-  printf 'NOTE: debian-archive-keyring not found, trusting the https mirrors instead of verifying signatures.\n'
-fi
-cat > "$APT_DIR/sources.list" <<EOF
-deb [arch=$ARCH $SIGN] $MIRROR $DEBIAN_RELEASE main
-deb [arch=$ARCH $SIGN] $MIRROR $DEBIAN_RELEASE-updates main
-deb [arch=$ARCH $SIGN] $SECURITY_MIRROR $DEBIAN_RELEASE-security main
+KEYRING=/usr/share/keyrings/debian-archive-keyring.gpg
+write_sources () {
+  local sign="$1"
+  cat > "$APT_DIR/sources.list" <<EOF
+deb [arch=$ARCH $sign] $MIRROR $DEBIAN_RELEASE main
+deb [arch=$ARCH $sign] $MIRROR $DEBIAN_RELEASE-updates main
+deb [arch=$ARCH $sign] $SECURITY_MIRROR $DEBIAN_RELEASE-security main
 EOF
+}
 
 APT=(apt-get
   -o Dir::Etc::sourcelist="$APT_DIR/sources.list"
@@ -136,7 +134,20 @@ APT=(apt-get
   -o APT::Install-Suggests=false
 )
 
-"${APT[@]}" update
+# Verify signatures when this machine's Debian keyring knows the release's keys.
+# An old keyring (or none) cannot, so fall back to trusting the https mirrors.
+if [[ -f "$KEYRING" ]]; then
+  write_sources "signed-by=$KEYRING"
+  if ! "${APT[@]}" update; then
+    printf '\nNOTE: signature check failed (old Debian keyring on this machine?), trusting the https mirrors instead.\n'
+    write_sources "trusted=yes"
+    "${APT[@]}" update
+  fi
+else
+  printf 'NOTE: debian-archive-keyring not found, trusting the https mirrors instead of verifying signatures.\n'
+  write_sources "trusted=yes"
+  "${APT[@]}" update
+fi
 "${APT[@]}" install -y --download-only "${PACKAGES[@]}"
 
 shopt -s nullglob
@@ -184,7 +195,7 @@ Done.
   $TAR_FILE ($(du -h "$TAR_FILE" | cut -f1))
   $OUT_DIR/install.sh
 
-Copy both files to the USB stick. On the target machine (fresh Debian 12, no desktop):
+Copy both files to the USB stick. On the target machine (fresh Debian ${DEBIAN_RELEASE}, no desktop):
 
   sudo bash /path/to/usb/install.sh
 
