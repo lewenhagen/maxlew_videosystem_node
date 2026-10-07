@@ -1,6 +1,7 @@
 import  * as fs  from 'fs'
 import { createCipheriv } from 'crypto';
 
+const CODE_WINDOW_DAYS = 30
 let maxTries = 3
 let currentTries = 3
 
@@ -42,16 +43,24 @@ async function checkValidity() {
 
 async function testCode (codeToTest) {
   const exp = await JSON.parse(fs.readFileSync('./config/.expiration.json'))
-  const theyear = (new Date().getFullYear()).toString()
   const userId = process.env.VIDEOSYSTEM_ID
-  const decryptedString = decryptFrom8Digits(codeToTest, theyear, userId);
   let validCode = false
 
-  if (decryptedString) {
-    let temp = new Date().getFullYear()
-    let temp2 = new Date()
-    temp2.setFullYear(temp+1)
-    exp.date = temp2.toISOString().slice(0, 10).replace(/-/g, '')
+  // The code is made from the day it was generated (YYYYMMDD); find that day among the
+  // last CODE_WINDOW_DAYS days. The license then runs one year from that day.
+  let generated = null
+  for (let i = 0; i <= CODE_WINDOW_DAYS && !generated; i++) {
+    const day = new Date()
+    day.setUTCDate(day.getUTCDate() - i)
+    if (decryptFrom8Digits(codeToTest, day.toISOString().slice(0, 10).replace(/-/g, ''), userId)) {
+      generated = day
+    }
+  }
+
+  if (generated) {
+    generated.setUTCFullYear(generated.getUTCFullYear() + 1)
+    const newDate = generated.toISOString().slice(0, 10).replace(/-/g, '')
+    exp.date = newDate > exp.date ? newDate : exp.date
     fs.writeFile("./config/.expiration.json", JSON.stringify(exp), 'utf8', (err) => {
         if (err) {
             console.error('Error writing to file', err);

@@ -39,7 +39,9 @@ Image quality is set by the camera URL in `index.js`
 * **License**: `config/.expiration.json` holds the end date (`{"date":"YYYYMMDD"}`),
   compared with the machine's clock. When it has passed, the main menu shows the
   license page, where a renewal code can be entered. Codes are checked against the
-  `VIDEOSYSTEM_ID` environment variable. A new install gets one year from the install date.
+  `VIDEOSYSTEM_ID` environment variable. A code encodes the day it was generated, must be
+  entered within 30 days of that, and extends the license to one year after that day
+  (never shortening it). A new install gets one year from the install date.
 
 ## Installing on a machine
 
