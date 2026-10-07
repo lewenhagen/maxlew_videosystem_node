@@ -36,9 +36,10 @@ Image quality is set by the camera URL in `index.js`
 * **Cameras**: `config/cameras.json`, a list of `{ "name": "...", "ip": "..." }`.
   Edit it with `m` in the main menu, or with `./maxlew.sh add|remove|list`. The file
   is created empty if it is missing and is not committed to git.
-* **License**: `config/.expiration.json` holds the end date (`{"date":"YYYYMMDD"}`).
-  When it has passed, the main menu shows the license page, where a renewal code can
-  be entered. Codes are checked against the `VIDEOSYSTEM_ID` environment variable.
+* **License**: `config/.expiration.json` holds the end date (`{"date":"YYYYMMDD"}`),
+  compared with the machine's clock. When it has passed, the main menu shows the
+  license page, where a renewal code can be entered. Codes are checked against the
+  `VIDEOSYSTEM_ID` environment variable. A new install gets one year from the install date.
 
 ## Installing on a machine
 

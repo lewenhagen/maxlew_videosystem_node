@@ -75,10 +75,12 @@ NODE_BIN="$WORK/${NODE_FILE%.tar.xz}/bin"
 # 2. The app with production dependencies
 # -----------------------------------------------------------------------------
 log "Copying the app and installing production dependencies"
-# Left out on purpose: machine specific or secret files (.env, cameras.json),
+# Left out on purpose: machine specific or secret files (.env, cameras.json,
+# the license date, which install.sh sets per machine),
 # dev dependencies (reinstalled below) and this folder.
 tar -C "$REPO_DIR" \
   --exclude=.git --exclude=node_modules --exclude=.env --exclude=cameras.json \
+  --exclude=.expiration.json \
   --exclude=offline-install --exclude='*.tgz' --exclude='*Zone.Identifier' \
   -cf - . | tar -C "$BUNDLE/app" -xf -
 
@@ -86,17 +88,6 @@ tar -C "$REPO_DIR" \
 [[ -d "$BUNDLE/app/node_modules/express" ]] || die "npm ci did not install the dependencies"
 
 APP_VERSION="$(PATH="$NODE_BIN:$PATH" node -p "require('$BUNDLE/app/package.json').version")"
-
-INITIAL_EXPIRY=""
-if [[ -f "$BUNDLE/app/config/.expiration.json" ]]; then
-  INITIAL_EXPIRY="$(PATH="$NODE_BIN:$PATH" node -p "require('$BUNDLE/app/config/.expiration.json').date")"
-  if [[ "$INITIAL_EXPIRY" < "$(date +%Y%m%d)" ]]; then
-    printf '\nWARNING: config/.expiration.json says the license ended %s.\n' "$INITIAL_EXPIRY"
-    printf '         Machines installed from this bundle will show the license-expired page.\n'
-  fi
-else
-  printf '\nWARNING: config/.expiration.json is missing, the app will not start without it.\n'
-fi
 
 # -----------------------------------------------------------------------------
 # 3. Debian packages: resolve against an EMPTY dpkg state so the bundle holds
@@ -130,6 +121,7 @@ APT=(apt-get
   -o APT::Architectures="$ARCH"
   -o APT::Sandbox::User=
   -o Acquire::Languages=none
+  -o Acquire::Check-Date=false
   -o APT::Install-Recommends=false
   -o APT::Install-Suggests=false
 )
@@ -191,7 +183,6 @@ ARCH="$ARCH"
 APP_VERSION="$APP_VERSION"
 NODE_VERSION="$NODE_VERSION"
 NODE_FILE="$NODE_FILE"
-INITIAL_EXPIRY="$INITIAL_EXPIRY"
 PACKAGES="${PACKAGES[*]}"
 EOF
 
@@ -213,5 +204,5 @@ Copy both files to the USB stick. On the target machine (fresh Debian ${DEBIAN_R
 
   sudo bash /path/to/usb/install.sh
 
-App version $APP_VERSION, Node.js $NODE_VERSION, license expiry in the bundle: ${INITIAL_EXPIRY:-none}.
+App version $APP_VERSION, Node.js $NODE_VERSION.
 EOF

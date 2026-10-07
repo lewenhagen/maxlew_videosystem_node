@@ -19,11 +19,9 @@ and `xz` installed. No root needed, nothing on the computer is changed.
 ./offline-install/make-offline-bundle.sh
 ```
 
-Before you build:
-
-* Set the license date you want in `config/.expiration.json`. The bundle ships the
-  file as it is in your working tree, and the builder warns if the date has passed.
-* The bundle is made from your working tree, so commit or check what you have.
+The bundle is made from your working tree, so commit or check what you have first.
+The license date is not part of the bundle: `install.sh` sets it on each machine
+(see below).
 
 The result is in `offline-install/dist/` (not committed to git):
 
@@ -63,8 +61,10 @@ bash /mnt/install.sh
 
 Use `bash install.sh`, not `./install.sh`, so it works on a FAT stick too.
 
-It first asks for the machine's `VIDEOSYSTEM_ID` (used for license codes). After
-that it runs without questions. When it is done, reboot.
+It first asks for the machine's `VIDEOSYSTEM_ID` (used for license codes) and shows
+the machine's clock, which you can correct (an offline machine has no time server,
+and the license date is compared with this clock). After that it runs without
+questions. When it is done, reboot.
 
 Options:
 
@@ -72,8 +72,16 @@ Options:
 | --- | --- |
 | `--id VALUE` | Use this `VIDEOSYSTEM_ID` and skip the question |
 | `--bundle FILE` | Use this bundle instead of `maxlew-offline-bundle.tar` next to the script |
+| `--expiry YYYYMMDD` | License end date. Default: one year from today on a new install (see below) |
 | `--reboot` | Reboot when finished |
 | `--force` | Continue on a Debian release or architecture mismatch |
+
+### License date
+
+* **New install:** the license ends **one year from the install date**, taken from the
+  machine's clock (which is why the installer shows the time first).
+* **Re-install or update:** the machine keeps its own date. An update never extends the license.
+* **`--expiry`:** sets a specific date, also on a machine that already has one.
 
 You need a few GB free in `/var/tmp` (about three times the size of the tar).
 
@@ -86,6 +94,7 @@ You need a few GB free in `/var/tmp` (about three times the size of the tar).
 * A Chromium kiosk that opens `http://localhost:3000/splashscreen`, restarts if it
   exits, and is configured to show no dialogs or popups.
 * `/etc/maxlew/maxlew.env` with the `VIDEOSYSTEM_ID`.
+* `config/.expiration.json` with the license end date (see above).
 * A sudo rule so the shutdown page can run `systemctl poweroff`.
 
 ## After the install
@@ -103,12 +112,31 @@ journalctl -u videostream -f
 cat /var/log/maxlew-install.log
 ```
 
-## Running it again
+## Updating an installed machine
 
-Safe to run again (for a new version). The machine's cameras, license date and
-`VIDEOSYSTEM_ID` are kept; the newer license date wins. The old app folder is
-moved to `/opt/maxlew_videosystem_node.bak-<date>` and can be deleted when you are
-happy with the new version.
+Use the same installer. It is safe to run again, and nothing needs to be uninstalled.
+
+1. On the computer with internet: `git pull`, then `./offline-install/make-offline-bundle.sh`.
+2. Copy the new `maxlew-offline-bundle.tar` and `install.sh` to the stick (replace the old ones).
+3. On the machine, as root: `bash install.sh` (as in step 3 above).
+   * At the ID question, press Enter to keep the current ID.
+   * At the time question, press Enter if the clock is right.
+4. Reboot, so the kiosk browser loads the new version.
+
+What is kept: the machine's cameras, its license date and its `VIDEOSYSTEM_ID`. What is replaced: the app, and the kiosk
+and service settings. Debian packages are only upgraded if the bundle has newer ones.
+
+The old app folder is moved to `/opt/maxlew_videosystem_node.bak-<date>`. To go back
+to it:
+
+```
+systemctl stop videostream
+mv /opt/maxlew_videosystem_node /opt/maxlew_videosystem_node.new
+mv /opt/maxlew_videosystem_node.bak-<date> /opt/maxlew_videosystem_node
+systemctl start videostream
+```
+
+Delete the old `.bak-*` folders when you are happy with the new version.
 
 ## First time
 

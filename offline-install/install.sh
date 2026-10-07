@@ -12,6 +12,8 @@
 # Options:
 #   --bundle FILE   use this bundle instead of maxlew-offline-bundle.tar next to the script
 #   --id VALUE      the VIDEOSYSTEM_ID used for license codes (asked for first if left out)
+#   --expiry DATE   license end date, YYYYMMDD (default: one year from today on a new
+#                   install; a machine that already has a date keeps it)
 #   --reboot        reboot when the installation is finished
 #   --force         do not stop on a Debian release / architecture mismatch
 #
@@ -36,11 +38,13 @@ BUNDLE_FILE=""
 VIDEOSYSTEM_ID="${VIDEOSYSTEM_ID:-}"
 DO_REBOOT=0
 FORCE=0
+EXPIRY=""
 
 while (( $# > 0 )); do
   case "$1" in
     --bundle) BUNDLE_FILE="${2:?--bundle needs a file}"; shift 2 ;;
     --id)     VIDEOSYSTEM_ID="${2:?--id needs a value}"; shift 2 ;;
+    --expiry) EXPIRY="${2:?--expiry needs a date, YYYYMMDD}"; shift 2 ;;
     --reboot) DO_REBOOT=1; shift ;;
     --force)  FORCE=1; shift ;;
     -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
@@ -53,6 +57,12 @@ warn () { printf '\033[33mWARNING: %s\033[0m\n' "$*"; }
 die ()  { printf '\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Run as root: sudo bash $0"
+
+if [[ -n "$EXPIRY" ]]; then
+  [[ "$EXPIRY" =~ ^[0-9]{8}$ ]] \
+    && [[ "$(date -d "${EXPIRY:0:4}-${EXPIRY:4:2}-${EXPIRY:6:2}" +%Y%m%d 2>/dev/null)" == "$EXPIRY" ]] \
+    || die "--expiry must be a real date written as YYYYMMDD, for example 20271231"
+fi
 
 # ------------------------------------------------------------
 # License ID: asked first so the rest of the install can run unattended
@@ -88,6 +98,28 @@ elif [[ -t 0 ]]; then
       break
     fi
     echo "The ID may not contain the character '"
+  done
+fi
+
+# ------------------------------------------------------------
+# System clock: an offline machine has no time server, and the license
+# date is compared with this clock.
+# ------------------------------------------------------------
+if [[ -t 0 ]]; then
+  printf '\n\033[1mSystem time\033[0m\n'
+  echo "The machine thinks it is now: $(date '+%Y-%m-%d %H:%M') ($(date +%Z))"
+  while true; do
+    read -r -p "Press Enter if that is right, or type the correct time (YYYY-MM-DD HH:MM): " answer || die "Aborted"
+    answer="${answer#"${answer%%[![:space:]]*}"}"
+    answer="${answer%"${answer##*[![:space:]]}"}"
+    [[ -z "$answer" ]] && break
+    if new_time="$(date -d "$answer" '+%Y-%m-%d %H:%M:%S' 2>/dev/null)"; then
+      date -s "$new_time" >/dev/null
+      command -v hwclock >/dev/null && { hwclock --systohc || true; }   # keep it after a reboot
+      echo "Time set to $(date '+%Y-%m-%d %H:%M')"
+      break
+    fi
+    echo "Could not understand that. Example: 2026-10-08 14:30"
   done
 fi
 
@@ -140,10 +172,6 @@ if [[ "$system_release" != "$DEBIAN_RELEASE" || "$system_arch" != "$ARCH" ]]; th
   (( FORCE )) && warn "$msg" || die "$msg (--force to try anyway)"
 fi
 
-if [[ -n "$INITIAL_EXPIRY" && "$INITIAL_EXPIRY" < "$(date +%Y%m%d)" ]]; then
-  warn "The license date shipped in the bundle ($INITIAL_EXPIRY) has already passed."
-fi
-
 # ------------------------------------------------------------
 # 1. Debian packages from the local repository on the stick
 # ------------------------------------------------------------
@@ -160,6 +188,8 @@ APT=(apt-get -y
   -o Dir::Etc::sourcelist="$WORK/maxlew-offline.list"
   -o Dir::Etc::sourceparts="$WORK/empty-sources.d"
   -o APT::List-Cleanup=0
+  -o Acquire::Check-Date=false
+  -o Acquire::Check-Valid-Until=false
   -o APT::Sandbox::User=root
   -o Acquire::Languages=none
   -o Dpkg::Options::=--force-confold
@@ -213,19 +243,23 @@ fi
 cp -a "$SRC/app" "$APP_DIR"
 mkdir -p "$APP_DIR/config"
 
-# Keep this machine's cameras and license; the newer license date wins.
-read_date () { sed -n 's/.*"date" *: *"\([0-9]\{8\}\)".*/\1/p' "$1" 2>/dev/null || true; }
-bundle_date="$(read_date "$APP_DIR/config/.expiration.json")"
+# Keep this machine's cameras and license date. The date file that may be inside
+# the bundle is never used: it is the machine's own file, or a new date.
+rm -f "$APP_DIR/config/.expiration.json"
 if [[ -n "$BACKUP" && -d "$BACKUP/config" ]]; then
   cp -a "$BACKUP/config/." "$APP_DIR/config/"
-  kept_date="$(read_date "$APP_DIR/config/.expiration.json")"
-  if [[ -n "$bundle_date" && "$bundle_date" > "${kept_date:-0}" ]]; then
-    echo "{\"date\":\"$bundle_date\"}" > "$APP_DIR/config/.expiration.json"
-    echo "License date taken from the bundle: $bundle_date"
-  fi
 fi
 [[ -f "$APP_DIR/config/cameras.json" ]] || echo '[]' > "$APP_DIR/config/cameras.json"
-[[ -f "$APP_DIR/config/.expiration.json" ]] || warn "config/.expiration.json is missing, the app will not start"
+
+EXP_FILE="$APP_DIR/config/.expiration.json"
+if [[ -z "$EXPIRY" && -s "$EXP_FILE" ]]; then
+  echo "License date kept: $(sed -n 's/.*"date" *: *"\([0-9]\{8\}\)".*/\1/p' "$EXP_FILE")"
+else
+  # Same rule as the app's renewal code: one year ahead, in UTC
+  [[ -n "$EXPIRY" ]] || EXPIRY="$(date -u -d '+1 year' +%Y%m%d)"
+  printf '{"date":"%s"}' "$EXPIRY" > "$EXP_FILE"
+  echo "License valid until $EXPIRY"
+fi
 
 chmod +x "$APP_DIR"/*.sh 2>/dev/null || true
 chown -R "$KIOSK_USER:$KIOSK_USER" "$APP_DIR"
