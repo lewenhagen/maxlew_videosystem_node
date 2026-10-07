@@ -482,11 +482,8 @@ cat <<EOF
  Installation finished.
 
  Next steps:
-  1. Add cameras (only changes config/cameras.json):
-       cd $APP_DIR && sudo -u $KIOSK_USER ./maxlew.sh add
-     then restart the app so it reads them:
-       sudo systemctl restart $SERVICE
-  2. Reboot. The machine logs in as '$KIOSK_USER' and starts the kiosk by itself.
+  1. Reboot. The machine logs in as '$KIOSK_USER' and starts the kiosk by itself.
+  2. Add cameras: press m in the main menu (add / edit / remove).
   3. Test sound and the touch screen.
 
  Useful:

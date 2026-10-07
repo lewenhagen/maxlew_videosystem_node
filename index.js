@@ -40,7 +40,7 @@ let config = await loadCamerasConfig()
 // ---------------------------------------------------------------------------
 const CAMERAS_FILE = './config/cameras.json'
 
-// Re-reads the file so edits made outside the app (maxlew.sh) are picked up.
+// Re-reads the file so edits made outside the app (by hand) are picked up.
 // A broken file keeps the previous list instead of taking the pages down.
 async function reloadCameras () {
   try {

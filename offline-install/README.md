@@ -100,8 +100,7 @@ You need a few GB free in `/var/tmp` (about three times the size of the tar).
 ## After the install
 
 * Reboot. The machine starts the kiosk by itself.
-* Add cameras: press **m** in the main menu (add / edit / remove with the keyboard),
-  or run `cd /opt/maxlew_videosystem_node && sudo -u maxlew ./maxlew.sh add`.
+* Add cameras: press **m** in the main menu (add / edit / remove with the keyboard).
 * Check the sound and the touch screen.
 
 Useful commands:

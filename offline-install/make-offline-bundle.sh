@@ -36,8 +36,8 @@ PACKAGES=(
   fonts-liberation fonts-dejavu-core
   # sound (the splash screen plays audio)
   alsa-utils pipewire-audio dbus-user-session libpam-systemd
-  # tools used by the app and maxlew.sh
-  sudo curl jq nmap xdotool lsof xz-utils
+  # sudo: the shutdown page. curl: the kiosk waits for the app. xz-utils: unpacks Node.js.
+  sudo curl xz-utils
 )
 
 log () { printf '\n==> %s\n' "$*"; }

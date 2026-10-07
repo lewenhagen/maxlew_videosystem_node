@@ -34,8 +34,8 @@ Image quality is set by the camera URL in `index.js`
 ## Configuration
 
 * **Cameras**: `config/cameras.json`, a list of `{ "name": "...", "ip": "..." }`.
-  Edit it with `m` in the main menu, or with `./maxlew.sh add|remove|list`. The file
-  is created empty if it is missing and is not committed to git.
+  Edit it with `m` in the main menu (add, edit, remove). The file is created empty if
+  it is missing and is not committed to git.
 * **License**: `config/.expiration.json` holds the end date (`{"date":"YYYYMMDD"}`),
   compared with the machine's clock. When it has passed, the main menu shows the
   license page, where a renewal code can be entered. Codes are checked against the
@@ -70,12 +70,4 @@ views/                        EJS pages
 public/                       css, images, sounds
 config/                       cameras.json, .expiration.json
 offline-install/              offline kiosk installer and bundle builder
-maxlew.sh                     command line helper for the camera list
 ```
-
-## Command line helper
-
-`maxlew.sh` is a small helper for the camera list: `list`, `add`, `remove`, `scan`
-(find cameras with nmap) and `check`. Run it from the app folder, as the app user
-(`sudo -u maxlew ./maxlew.sh add`), and restart the app afterwards
-(`sudo systemctl restart videostream`). Run `./maxlew.sh -h` for the menu.
