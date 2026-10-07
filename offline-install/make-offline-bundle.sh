@@ -31,7 +31,7 @@ SECURITY_MIRROR="${DEBIAN_SECURITY_MIRROR:-https://security.debian.org/debian-se
 # Everything install.sh installs with apt. Dependencies are added automatically.
 PACKAGES=(
   # X and kiosk
-  xorg xinit x11-xserver-utils xserver-xorg-legacy xserver-xorg-input-void
+  xorg xinit x11-xserver-utils xserver-xorg-legacy
   openbox chromium chromium-sandbox unclutter
   fonts-liberation fonts-dejavu-core
   # sound (the splash screen plays audio)
@@ -104,7 +104,7 @@ fi
 # -----------------------------------------------------------------------------
 log "Resolving and downloading Debian ${DEBIAN_RELEASE} packages"
 APT_DIR="$WORK/apt"
-mkdir -p "$APT_DIR/state/lists/partial" "$APT_DIR/cache/archives/partial"
+mkdir -p "$APT_DIR/state/lists/partial" "$APT_DIR/cache/archives/partial" "$APT_DIR/empty"
 : > "$APT_DIR/status"
 
 KEYRING=/usr/share/keyrings/debian-archive-keyring.gpg
@@ -119,9 +119,9 @@ EOF
 
 APT=(apt-get
   -o Dir::Etc::sourcelist="$APT_DIR/sources.list"
-  -o Dir::Etc::sourceparts=-
+  -o Dir::Etc::sourceparts="$APT_DIR/empty"
   -o Dir::Etc::preferences=/dev/null
-  -o Dir::Etc::preferencesparts=-
+  -o Dir::Etc::preferencesparts="$APT_DIR/empty"
   -o Dir::State="$APT_DIR/state"
   -o Dir::State::status="$APT_DIR/status"
   -o Dir::Cache="$APT_DIR/cache"
@@ -134,20 +134,34 @@ APT=(apt-get
   -o APT::Install-Suggests=false
 )
 
+# apt-get update can finish "successfully" while skipping a repository whose
+# signature it cannot verify, so with verification on (strict) the output is
+# checked as well as the exit code. With trusted=yes apt still prints key
+# warnings but uses the repository, so there only the exit code counts.
+update_checked () {
+  local mode="$1" log="$WORK/apt-update.log" rc=0
+  "${APT[@]}" update 2>&1 | tee "$log" || rc=$?
+  (( rc == 0 )) || return 1
+  [[ "$mode" == lenient ]] || ! grep -qE 'GPG error|NO_PUBKEY|is not signed|could not be verified' "$log"
+}
+
 # Verify signatures when this machine's Debian keyring knows the release's keys.
-# An old keyring (or none) cannot, so fall back to trusting the https mirrors.
+# An old keyring (or none) cannot, so fall back to trusting the https mirrors
+# (apt still checks every file against the hashes in the release files).
 if [[ -f "$KEYRING" ]]; then
   write_sources "signed-by=$KEYRING"
-  if ! "${APT[@]}" update; then
+  if ! update_checked strict; then
     printf '\nNOTE: signature check failed (old Debian keyring on this machine?), trusting the https mirrors instead.\n'
     write_sources "trusted=yes"
-    "${APT[@]}" update
+    update_checked lenient || die "apt update failed"
   fi
 else
   printf 'NOTE: debian-archive-keyring not found, trusting the https mirrors instead of verifying signatures.\n'
   write_sources "trusted=yes"
-  "${APT[@]}" update
+  update_checked lenient || die "apt update failed"
 fi
+compgen -G "$APT_DIR/state/lists/*Packages*" >/dev/null || die "apt update fetched no package lists"
+
 "${APT[@]}" install -y --download-only "${PACKAGES[@]}"
 
 shopt -s nullglob

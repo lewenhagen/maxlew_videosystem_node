@@ -150,6 +150,7 @@ fi
 step "Installing Debian packages (offline)"
 
 chmod -R a+rX "$WORK"
+mkdir -p "$WORK/empty-sources.d"
 echo "deb [trusted=yes] file:$SRC/apt-repo ./" > "$WORK/maxlew-offline.list"
 
 export DEBIAN_FRONTEND=noninteractive
@@ -157,7 +158,7 @@ export APT_LISTCHANGES_FRONTEND=none
 
 APT=(apt-get -y
   -o Dir::Etc::sourcelist="$WORK/maxlew-offline.list"
-  -o Dir::Etc::sourceparts=-
+  -o Dir::Etc::sourceparts="$WORK/empty-sources.d"
   -o APT::List-Cleanup=0
   -o APT::Sandbox::User=root
   -o Acquire::Languages=none

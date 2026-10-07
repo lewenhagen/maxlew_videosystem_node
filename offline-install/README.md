@@ -29,7 +29,7 @@ The result is in `offline-install/dist/` (not committed to git):
 
 | File | What it is |
 | --- | --- |
-| `maxlew-offline-bundle.tar` | The app, Node.js and every Debian package needed (several hundred MB) |
+| `maxlew-offline-bundle.tar` | The app, Node.js and every Debian package needed (about 350 MB) |
 | `install.sh` | The only thing you run on the target machine |
 
 Rebuild whenever the app or `install.sh` changes. The bundle gets the Debian
