@@ -5,7 +5,7 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-import { readFile, writeFile } from 'fs/promises'
+import { readFile, writeFile, rename } from 'fs/promises'
 import open from 'open'
 import { CameraStreamManager } from './src/cameraStreamManager.js'
 import { URL } from 'url'
@@ -34,6 +34,73 @@ async function loadCamerasConfig() {
 }
 
 let config = await loadCamerasConfig()
+
+// ---------------------------------------------------------------------------
+// Camera list (config/cameras.json) editing
+// ---------------------------------------------------------------------------
+const CAMERAS_FILE = './config/cameras.json'
+
+// Re-reads the file so edits made outside the app (maxlew.sh) are picked up.
+// A broken file keeps the previous list instead of taking the pages down.
+async function reloadCameras () {
+  try {
+    const list = await loadCamerasConfig()
+    if (!Array.isArray(list)) throw new Error('cameras.json is not a list')
+    config = list
+  } catch (err) {
+    console.error('[ERROR] Could not read cameras.json, keeping the previous list:', err.message)
+  }
+  return config
+}
+
+// Writes the whole file to a temporary name first so a power cut cannot leave half a file
+async function saveCameras (list) {
+  const tmp = `${CAMERAS_FILE}.tmp`
+  await writeFile(tmp, JSON.stringify(list, null, 2) + '\n')
+  await rename(tmp, CAMERAS_FILE)
+  config = list
+}
+
+// Read-modify-write cycles run one at a time
+let cameraLock = Promise.resolve()
+function withCameraLock (fn) {
+  const run = cameraLock.then(fn)
+  cameraLock = run.catch(() => {})
+  return run
+}
+
+// Returns { camera } with cleaned values or { error } with a message to show
+function validateCamera (body) {
+  const name = String(body.name ?? '').trim().replace(/\s+/g, ' ')
+  const ip = String(body.ip ?? '').trim()
+
+  if (!name) return { error: 'Namn saknas.' }
+  if (name.length > 40) return { error: 'Namnet är för långt (max 40 tecken).' }
+
+  const octets = ip.split('.')
+  const validIp = octets.length === 4 && octets.every((o) => /^\d{1,3}$/.test(o) && Number(o) <= 255)
+  if (!validIp) return { error: 'Ogiltig IP-adress (t.ex. 192.168.0.10).' }
+
+  // Numbers only, so a typed leading zero can never be read as octal
+  return { camera: { name, ip: octets.map(Number).join('.') } }
+}
+
+// Index from a URL parameter, or -1 if there is no such camera
+function cameraIndex (param, list) {
+  const i = Number.parseInt(param, 10)
+  return String(i) === param && i >= 0 && i < list.length ? i : -1
+}
+
+const LOCAL_IPS = ['127.0.0.1', '::1', '::ffff:127.0.0.1']
+function requireLocal (req, res, next) {
+  if (!LOCAL_IPS.includes(req.ip)) return res.status(403).send('Forbidden')
+  next()
+}
+
+// Express 4 does not catch errors from async handlers by itself
+function asyncRoute (fn) {
+  return (req, res, next) => Promise.resolve(fn(req, res, next)).catch(next)
+}
 
 let tries = 3
 
@@ -119,6 +186,7 @@ app.get('/', checkLicense, async function (req, res) {
   for (const stream of streamManager.getStreamNames()) {
     await streamManager.stopCameraStream(stream)
   }
+  await reloadCameras()
   res.setHeader('Content-Language', 'sv')
   res.render('index', { config })
 })
@@ -188,6 +256,97 @@ app.post("/shutdown", (req, res) => {
     return res.redirect("/shutdown")
   }
 });
+
+// ---------------------------------------------------------------------------
+// Admin: add / edit / remove cameras (this machine only)
+// ---------------------------------------------------------------------------
+const ADMIN_MESSAGES = new Map([
+  ['added', 'Kameran är tillagd.'],
+  ['edited', 'Kameran är sparad.'],
+  ['removed', 'Kameran är borttagen.']
+])
+
+app.use('/admin', requireLocal)
+
+app.get('/admin', asyncRoute(async (req, res) => {
+  const cameras = await reloadCameras()
+  const last = Math.max(cameras.length - 1, 0)
+  const selected = Math.min(Math.max(Number.parseInt(req.query.sel, 10) || 0, 0), last)
+  res.render('admin', {
+    cameras,
+    selected,
+    message: ADMIN_MESSAGES.get(req.query.msg) || null
+  })
+}))
+
+app.get('/admin/add', (req, res) => {
+  res.render('admin-edit', { mode: 'add', id: null, camera: { name: '', ip: '' }, error: null })
+})
+
+app.post('/admin/add', asyncRoute(async (req, res) => {
+  const { camera, error } = validateCamera(req.body)
+  if (error) {
+    const typed = { name: String(req.body.name ?? '').slice(0, 100), ip: String(req.body.ip ?? '').slice(0, 100) }
+    return res.status(400).render('admin-edit', { mode: 'add', id: null, camera: typed, error })
+  }
+
+  const index = await withCameraLock(async () => {
+    const list = [...await reloadCameras(), camera]
+    await saveCameras(list)
+    return list.length - 1
+  })
+  console.log(`[ADMIN] Added camera "${camera.name}" (${camera.ip})`)
+  res.redirect(`/admin?msg=added&sel=${index}`)
+}))
+
+app.get('/admin/edit/:id', asyncRoute(async (req, res) => {
+  const cameras = await reloadCameras()
+  const i = cameraIndex(req.params.id, cameras)
+  if (i === -1) return res.redirect('/admin')
+  res.render('admin-edit', { mode: 'edit', id: i, camera: cameras[i], error: null })
+}))
+
+app.post('/admin/edit/:id', asyncRoute(async (req, res) => {
+  const { camera, error } = validateCamera(req.body)
+  if (error) {
+    const typed = { name: String(req.body.name ?? '').slice(0, 100), ip: String(req.body.ip ?? '').slice(0, 100) }
+    return res.status(400).render('admin-edit', { mode: 'edit', id: req.params.id, camera: typed, error })
+  }
+
+  const i = await withCameraLock(async () => {
+    const list = [...await reloadCameras()]
+    const index = cameraIndex(req.params.id, list)
+    if (index === -1) return -1
+    list[index] = camera
+    await saveCameras(list)
+    return index
+  })
+  if (i === -1) return res.redirect('/admin')
+  console.log(`[ADMIN] Changed camera ${i + 1} to "${camera.name}" (${camera.ip})`)
+  res.redirect(`/admin?msg=edited&sel=${i}`)
+}))
+
+// Confirmation is a page, not a browser dialog: the kiosk must never show popups
+app.get('/admin/remove/:id', asyncRoute(async (req, res) => {
+  const cameras = await reloadCameras()
+  const i = cameraIndex(req.params.id, cameras)
+  if (i === -1) return res.redirect('/admin')
+  res.render('admin-remove', { id: i, camera: cameras[i] })
+}))
+
+app.post('/admin/remove/:id', asyncRoute(async (req, res) => {
+  const result = await withCameraLock(async () => {
+    const list = [...await reloadCameras()]
+    const index = cameraIndex(req.params.id, list)
+    if (index === -1) return null
+    const [removed] = list.splice(index, 1)
+    await saveCameras(list)
+    return { index, removed, remaining: list.length }
+  })
+  if (!result) return res.redirect('/admin')
+  console.log(`[ADMIN] Removed camera "${result.removed.name}" (${result.removed.ip})`)
+  res.redirect(`/admin?msg=removed&sel=${Math.min(result.index, Math.max(result.remaining - 1, 0))}`)
+}))
 
 app.get('/singlecam', function (req, res) {
   res.render('single-cam', { config })

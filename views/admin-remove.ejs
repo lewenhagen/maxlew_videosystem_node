@@ -1,0 +1,25 @@
+<%- include('header.ejs') %>
+
+<div class="container">
+  <div class="is-rounded" style="width: 50%; margin: 0 auto;">
+    <h1>Ta bort kamera</h1>
+    <p>Vill du ta bort <span class="logocolor"><%= camera.name %></span> (<%= camera.ip %>)?</p>
+    <form id="remove_form" method="post" action="/admin/remove/<%= id %>">
+      <input type="submit" hidden>
+    </form>
+    <p style="margin-top: 1em">Enter. Ja, ta bort &nbsp; Esc. Nej, avbryt</p>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault()
+      document.getElementById("remove_form").submit()
+    } else if (event.key === "Escape") {
+      window.location.replace("/admin", true)
+    }
+  })
+</script>
+
+<%- include('footer.ejs') %>
