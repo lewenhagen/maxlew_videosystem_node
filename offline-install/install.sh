@@ -11,7 +11,7 @@
 #
 # Options:
 #   --bundle FILE   use this bundle instead of maxlew-offline-bundle.tar next to the script
-#   --id VALUE      the VIDEOSYSTEM_ID used for license codes (asked for if left out)
+#   --id VALUE      the VIDEOSYSTEM_ID used for license codes (asked for first if left out)
 #   --reboot        reboot when the installation is finished
 #   --force         do not stop on a Debian release / architecture mismatch
 #
@@ -53,6 +53,43 @@ warn () { printf '\033[33mWARNING: %s\033[0m\n' "$*"; }
 die ()  { printf '\033[31mERROR: %s\033[0m\n' "$*" >&2; exit 1; }
 
 [[ $EUID -eq 0 ]] || die "Run as root: sudo bash $0"
+
+# ------------------------------------------------------------
+# License ID: asked first so the rest of the install can run unattended
+# ------------------------------------------------------------
+EXISTING_ID=""
+if [[ -f "$ENV_FILE" ]]; then
+  EXISTING_ID="$(sed -n "s/^VIDEOSYSTEM_ID='\(.*\)'$/\1/p" "$ENV_FILE")"
+fi
+
+valid_id () { [[ -n "$1" && "$1" != *"'"* ]]; }
+
+if [[ -n "$VIDEOSYSTEM_ID" ]]; then
+  valid_id "$VIDEOSYSTEM_ID" || die "VIDEOSYSTEM_ID may not contain the character '"
+elif [[ -t 0 ]]; then
+  printf '\n\033[1mLicense ID\033[0m\n'
+  while true; do
+    if [[ -n "$EXISTING_ID" ]]; then
+      read -r -p "VIDEOSYSTEM_ID [Enter keeps $EXISTING_ID]: " answer || die "Aborted"
+    else
+      read -r -p "VIDEOSYSTEM_ID for this machine: " answer || die "Aborted"
+    fi
+    answer="${answer#"${answer%%[![:space:]]*}"}"   # trim
+    answer="${answer%"${answer##*[![:space:]]}"}"
+
+    if [[ -z "$answer" ]]; then
+      [[ -n "$EXISTING_ID" ]] && break              # keep the existing one
+      read -r -p "No ID entered. License codes will not work. Continue without one? [y/N] " yn || die "Aborted"
+      [[ "$yn" == [yY]* ]] && break
+      continue
+    fi
+    if valid_id "$answer"; then
+      VIDEOSYSTEM_ID="$answer"
+      break
+    fi
+    echo "The ID may not contain the character '"
+  done
+fi
 
 mkdir -p "$(dirname "$LOG")"
 exec > >(tee -a "$LOG") 2>&1
@@ -199,12 +236,7 @@ step "License ID"
 
 install -d -m 755 "$(dirname "$ENV_FILE")"
 
-if [[ -z "$VIDEOSYSTEM_ID" && ! -s "$ENV_FILE" && -t 0 ]]; then
-  read -r -p "VIDEOSYSTEM_ID for this machine (Enter to skip): " VIDEOSYSTEM_ID || true
-fi
-
 if [[ -n "$VIDEOSYSTEM_ID" ]]; then
-  [[ "$VIDEOSYSTEM_ID" != *"'"* && "$VIDEOSYSTEM_ID" != *$'\n'* ]] || die "VIDEOSYSTEM_ID may not contain ' or line breaks"
   printf "VIDEOSYSTEM_ID='%s'\n" "$VIDEOSYSTEM_ID" > "$ENV_FILE"
   echo "Saved to $ENV_FILE"
 elif [[ -s "$ENV_FILE" ]]; then
