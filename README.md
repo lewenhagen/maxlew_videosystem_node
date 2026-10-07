@@ -70,11 +70,12 @@ views/                        EJS pages
 public/                       css, images, sounds
 config/                       cameras.json, .expiration.json
 offline-install/              offline kiosk installer and bundle builder
+maxlew.sh                     command line helper for the camera list
 ```
 
-## Older files
+## Command line helper
 
-`maxlew.sh`, `maxlew.desktop`, `install_node.sh` and `no-gui-install.bash` belong to
-earlier installation methods (desktop autostart, nvm, online kiosk setup) and are
-replaced by `offline-install/`. `maxlew.sh` is still handy for `add`, `remove`,
-`list` and `scan` (find cameras with nmap).
+`maxlew.sh` is a small helper for the camera list: `list`, `add`, `remove`, `scan`
+(find cameras with nmap) and `check`. Run it from the app folder, as the app user
+(`sudo -u maxlew ./maxlew.sh add`), and restart the app afterwards
+(`sudo systemctl restart videostream`). Run `./maxlew.sh -h` for the menu.
