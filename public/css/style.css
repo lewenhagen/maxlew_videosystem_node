@@ -15,7 +15,7 @@ body {
     left:0;
     right:0;
     bottom:0;
-    font-size: 1.5em;
+    font-size: 1.8em;
     background: linear-gradient(135deg, #dff6ff, #e6f7ff, #f3e8ff, #fff7f2);
       background-size: 400% 400%;
       animation: pastelMove 5s ease infinite;
@@ -201,6 +201,8 @@ ul {
 }
 
 input[type=text], input[type=number], select {
+  font-size: inherit;
+  font-family: inherit;
   width: 100%;
   padding: 8px 16px;
   margin: 4px 0;
@@ -211,6 +213,8 @@ input[type=text], input[type=number], select {
 }
 
 input[type=submit] {
+  font-size: inherit;
+  font-family: inherit;
   width: 100%;
   background-color: #4CAF50;
   color: white;
