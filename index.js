@@ -37,6 +37,36 @@ let config = await loadCamerasConfig()
 
 let tries = 3
 
+// A bad request or a stray error must never take the kiosk down
+process.on('unhandledRejection', (reason) => {
+  console.error('[ERROR] Unhandled rejection:', reason)
+})
+process.on('uncaughtException', (err) => {
+  console.error('[ERROR] Uncaught exception:', err)
+})
+
+// Longest delay the server will buffer for (the pages themselves cap at 36s)
+const MAX_DELAY_SECONDS = 60
+
+// Returns the camera for a query/param index, or null if it does not exist
+function getCamera (index) {
+  const i = Number.parseInt(index, 10)
+  return Number.isInteger(i) && i >= 0 && i < config.length ? config[i] : null
+}
+
+// Resolves when the response can take more data, or when the client is gone
+function waitForDrain (res) {
+  return new Promise((resolve) => {
+    const done = () => {
+      res.off('drain', done)
+      res.off('close', done)
+      resolve()
+    }
+    res.once('drain', done)
+    res.once('close', done)
+  })
+}
+
 const streamManager = new CameraStreamManager()
 const dualcams = {
   left: {},
@@ -275,8 +305,10 @@ app.get('/selectbox-delay-dual-right/:left/:right?', function (req, res) {
 // Single camera stream (with delay)
 // ---------------------------------------------------------------------------
 app.get('/stream', async function (req, res) {
-  const ip = config[req.query.cam].ip
-  const name = config[req.query.cam].name
+  const camera = getCamera(req.query.cam)
+  if (!camera) return res.redirect('/')
+  const ip = camera.ip
+  const name = camera.name
   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
   const data = {
     delay: req.query.delay,
@@ -315,8 +347,10 @@ app.get('/stream', async function (req, res) {
 // Quad view — same camera, up to 4 different delays
 // ---------------------------------------------------------------------------
 app.get('/stream-quad', async function (req, res) {
-  const ip = config[req.query.cam].ip
-  const name = config[req.query.cam].name
+  const camera = getCamera(req.query.cam)
+  if (!camera) return res.redirect('/')
+  const ip = camera.ip
+  const name = camera.name
   const url = `http://${ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
   const data = {
     delay: req.query.delay,
@@ -333,84 +367,47 @@ app.get('/stream-quad', async function (req, res) {
   res.render('stream-quad', data)
 })
 
-// app.get('/stream/:streamName/:delay', async (req, res) => {
-//   const streamName = req.params.streamName
-//   const delay = req.params.delay
-//   const stream = streamManager.getCameraStream(streamName)
-
-//   if (!stream) {
-//     return res.status(404).send(`Stream for ${streamName} not found.`)
-//   }
-
-//   console.log(`Stream requested for ${streamName}.`)
-
-//   res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=--myboundary; Cache-Control: no-cache;')
-
-//   const delayedFramesGenerator = stream.getDelayedFrames(delay)
-
-//   let isClientConnected = true
-
-//   req.on('close', () => {
-//     console.log(`Client disconnected from ${streamName} stream.`)
-//     isClientConnected = false
-//   })
-
-//   try {
-//     for await (const frame of delayedFramesGenerator) {
-//       if (!isClientConnected) break
-
-//       res.write('--myboundary\r\n')
-//       res.write(`Content-Length: ${frame.length}\r\n\r\n`)
-//       res.write(frame)
-//       res.write('\r\n')
-//     }
-//   } catch (error) {
-//     console.error(`Error streaming frames for ${streamName}:`, error)
-//   } finally {
-//     res.end()
-//   }
-// })
-
 app.get('/stream/:streamName/:delay', async (req, res) => {
-  // const streamName = decodeURIComponent(req.params.streamName)
   const streamName = req.params.streamName
-  // const streamName = decodeURIComponent(req.params.streamName)
-  // console.log('Looking up stream key:', streamName)
-  // console.log('Available keys:', streamManager.getStreamNames())
-  const delay = parseFloat(req.params.delay) // explicit parse — never rely on coercion
- 
-  // Try direct name lookup first, then the url:: prefixed key
-  // const stream = streamManager.getCameraStream(streamName)
-    // ?? streamManager.getCameraStream(`url::${streamName}`)
+  const delay = Number.parseFloat(req.params.delay)
+
+  if (!Number.isFinite(delay) || delay < 0 || delay > MAX_DELAY_SECONDS) {
+    return res.status(400).send(`Invalid delay, must be between 0 and ${MAX_DELAY_SECONDS} seconds.`)
+  }
+
   const stream = streamManager.getCameraStream(streamName)
- 
+
   if (!stream) {
     return res.status(404).send(`Stream '${streamName}' not found.`)
   }
- 
+
   console.log(`${streamName} - Client connected, delay: ${delay}s`)
- 
+
   res.setHeader('Content-Type', 'multipart/x-mixed-replace; boundary=--myboundary')
   res.setHeader('Cache-Control', 'no-cache')
- 
-  let isClientConnected = true
+
+  // Aborting ends the frame generator even if the camera is not sending frames
+  const clientGone = new AbortController()
   req.on('close', () => {
     console.log(`${streamName} - Client disconnected (delay: ${delay}s)`)
-    isClientConnected = false
+    clientGone.abort()
   })
- 
+
   // getDelayedFrames registers/unregisters the consumer automatically
-  const delayedFramesGenerator = stream.getDelayedFrames(delay)
- 
+  const delayedFramesGenerator = stream.getDelayedFrames(delay, clientGone.signal)
+
   try {
     for await (const frame of delayedFramesGenerator) {
-      if (!isClientConnected) break
- 
+      if (res.destroyed || res.writableEnded) break
+
       res.write('--myboundary\r\n')
-      res.write(`Content-Type: image/jpeg\r\n`)
+      res.write('Content-Type: image/jpeg\r\n')
       res.write(`Content-Length: ${frame.length}\r\n\r\n`)
       res.write(frame)
-      res.write('\r\n')
+      const canContinue = res.write('\r\n')
+
+      // Respect backpressure so a slow client cannot make memory grow without limit
+      if (!canContinue) await waitForDrain(res)
     }
   } catch (err) {
     console.error(`${streamName} - Streaming error:`, err)
@@ -424,6 +421,13 @@ app.get('/stream/:streamName/:delay', async (req, res) => {
 // ---------------------------------------------------------------------------
 app.get('/health', function (req, res) {
   res.json(streamManager.getStreamHealth())
+})
+
+// Last resort for errors thrown inside route handlers
+app.use((err, req, res, next) => {
+  console.error(`[ERROR] ${req.method} ${req.originalUrl}:`, err)
+  if (res.headersSent) return res.end()
+  res.status(500).send('Internal error')
 })
 
 // Start server
