@@ -76,11 +76,11 @@ NODE_BIN="$WORK/${NODE_FILE%.tar.xz}/bin"
 # -----------------------------------------------------------------------------
 log "Copying the app and installing production dependencies"
 # Left out on purpose: machine specific or secret files (.env, cameras.json,
-# the license date, which install.sh sets per machine),
+# the license date, which install.sh sets per machine, and developer notes),
 # dev dependencies (reinstalled below) and this folder.
 tar -C "$REPO_DIR" \
   --exclude=.git --exclude=node_modules --exclude=.env --exclude=cameras.json \
-  --exclude=.expiration.json \
+  --exclude=.expiration.json --exclude=CLAUDE.md --exclude=.claude \
   --exclude=offline-install --exclude='*.tgz' --exclude='*Zone.Identifier' \
   -cf - . | tar -C "$BUNDLE/app" -xf -
 
