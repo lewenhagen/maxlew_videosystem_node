@@ -361,32 +361,25 @@ app.get('/doublecam', function (req, res) {
 })
 
 app.get('/selectbox/:cam', function (req, res) {
-  const cam = parseInt(req.params.cam) - 1
-  const data = {
-    chosenCamera: config[cam],
-    cam
-  }
-  res.render('selectbox', data)
+  const cam = Number.parseInt(req.params.cam, 10) - 1
+  const chosenCamera = getCamera(cam)
+  if (!chosenCamera) return res.redirect('/singlecam')
+  res.render('selectbox', { chosenCamera, cam })
 })
 
 app.get('/selectbox-quad/:cam', function (req, res) {
-  const cam = parseInt(req.params.cam) - 1
-  const data = {
-    chosenCamera: config[cam],
-    cam
-  }
-  res.render('selectbox-delay-quad', data)
+  const cam = Number.parseInt(req.params.cam, 10) - 1
+  const chosenCamera = getCamera(cam)
+  if (!chosenCamera) return res.redirect('/singlecam-quad')
+  res.render('selectbox-delay-quad', { chosenCamera, cam })
 })
 
 app.get('/selectbox-delta-quad', function (req, res) {
-  const cam = parseInt(req.query.cam)
-  const delay = parseInt(req.query.delay)
-  const data = {
-    chosenCamera: config[cam],
-    cam,
-    delay
-  }
-  res.render('selectbox-delta-quad', data)
+  const cam = Number.parseInt(req.query.cam, 10)
+  const delay = Number.parseInt(req.query.delay, 10)
+  const chosenCamera = getCamera(cam)
+  if (!chosenCamera || !Number.isFinite(delay)) return res.redirect('/singlecam-quad')
+  res.render('selectbox-delta-quad', { chosenCamera, cam, delay })
 })
 
 app.get('/selectbox-delay-dual-left/:left/:right?', function (req, res) {
@@ -396,10 +389,14 @@ app.get('/selectbox-delay-dual-left/:left/:right?', function (req, res) {
     right = left
   }
 
-  dualcams.left.cam = config[left]
-  dualcams.left.url = `http://${dualcams.left.cam.ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
-  dualcams.right.cam = config[right]
-  dualcams.right.url = `http://${dualcams.right.cam.ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
+  const leftCamera = getCamera(left)
+  const rightCamera = getCamera(right)
+  if (!leftCamera || !rightCamera) return res.redirect('/doublecam')
+
+  dualcams.left.cam = leftCamera
+  dualcams.left.url = `http://${leftCamera.ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
+  dualcams.right.cam = rightCamera
+  dualcams.right.url = `http://${rightCamera.ip}/axis-cgi/mjpg/video.cgi?resolution=1280x720&camera=1`
 
   res.render('selectbox-delay-dual-left', dualcams.left)
 })
