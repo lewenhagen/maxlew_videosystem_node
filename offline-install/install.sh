@@ -11,13 +11,11 @@
 #
 # Options:
 #   --bundle FILE   use this bundle instead of maxlew-offline-bundle.tar next to the script
-#   --id VALUE      the VIDEOSYSTEM_ID used for license codes (asked for first if left out)
-#   --expiry DATE   license end date, YYYYMMDD (default: one year from today on a new
-#                   install; a machine that already has a date keeps it)
+#   --id VALUE      the machine's license ID (asked for first if left out)
 #   --reboot        reboot when the installation is finished
 #   --force         do not stop on a Debian release / architecture mismatch
 #
-# Safe to run again: the machine's cameras, license date and ID are kept.
+# Safe to run again: the machine's cameras and license are kept.
 
 set -euo pipefail
 
@@ -47,7 +45,7 @@ while (( $# > 0 )); do
     --expiry) EXPIRY="${2:?--expiry needs a date, YYYYMMDD}"; shift 2 ;;
     --reboot) DO_REBOOT=1; shift ;;
     --force)  FORCE=1; shift ;;
-    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    -h|--help) awk 'NR > 1 { if (/^#/) { sub(/^# ?/, ""); print } else exit }' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "Unknown option: $1" >&2; exit 1 ;;
   esac
 done

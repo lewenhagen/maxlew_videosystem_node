@@ -20,8 +20,7 @@ and `xz` installed. No root needed, nothing on the computer is changed.
 ```
 
 The bundle is made from your working tree, so commit or check what you have first.
-The license date is not part of the bundle: `install.sh` sets it on each machine
-(see below).
+Each installed machine gets its own one-year license (see **License** below).
 
 The result is in `offline-install/dist/` (not committed to git):
 
@@ -61,27 +60,24 @@ bash /mnt/install.sh
 
 Use `bash install.sh`, not `./install.sh`, so it works on a FAT stick too.
 
-It first asks for the machine's `VIDEOSYSTEM_ID` (used for license codes) and shows
-the machine's clock, which you can correct (an offline machine has no time server,
-and the license date is compared with this clock). After that it runs without
-questions. When it is done, reboot.
+It first asks for the machine's license ID (provided by Maxlew Studios) and shows
+the machine's clock, which you can correct (an offline machine has no time server).
+After that it runs without questions. When it is done, reboot.
 
 Options:
 
 | Option | Meaning |
 | --- | --- |
-| `--id VALUE` | Use this `VIDEOSYSTEM_ID` and skip the question |
+| `--id VALUE` | Use this license ID and skip the question |
 | `--bundle FILE` | Use this bundle instead of `maxlew-offline-bundle.tar` next to the script |
-| `--expiry YYYYMMDD` | License end date. Default: one year from today on a new install (see below) |
 | `--reboot` | Reboot when finished |
 | `--force` | Continue on a Debian release or architecture mismatch |
 
-### License date
+### License
 
-* **New install:** the license ends **one year from the install date**, taken from the
-  machine's clock (which is why the installer shows the time first).
-* **Re-install or update:** the machine keeps its own date. An update never extends the license.
-* **`--expiry`:** sets a specific date, also on a machine that already has one.
+A new installation includes a one-year license. Re-installing or updating a machine
+does not extend it. When the license has ended, the main menu shows a page where a new
+one-year code from Maxlew Studios is entered.
 
 You need a few GB free in `/var/tmp` (about three times the size of the tar).
 
@@ -93,8 +89,7 @@ You need a few GB free in `/var/tmp` (about three times the size of the tar).
   (restarted automatically if it stops).
 * A Chromium kiosk that opens `http://localhost:3000/splashscreen`, restarts if it
   exits, and is configured to show no dialogs or popups.
-* `/etc/maxlew/maxlew.env` with the `VIDEOSYSTEM_ID`.
-* `config/.expiration.json` with the license end date (see above).
+* The machine's license ID and its one-year license (see above).
 * A sudo rule so the shutdown page can run `systemctl poweroff`.
 
 ## After the install
@@ -122,7 +117,7 @@ Use the same installer. It is safe to run again, and nothing needs to be uninsta
    * At the time question, press Enter if the clock is right.
 4. Reboot, so the kiosk browser loads the new version.
 
-What is kept: the machine's cameras, its license date and its `VIDEOSYSTEM_ID`. What is replaced: the app, and the kiosk
+What is kept: the machine's cameras and its license. What is replaced: the app, and the kiosk
 and service settings. Debian packages are only upgraded if the bundle has newer ones.
 
 The old app folder is moved to `/opt/maxlew_videosystem_node.bak-<date>`. To go back

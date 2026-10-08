@@ -36,12 +36,9 @@ Image quality is set by the camera URL in `index.js`
 * **Cameras**: `config/cameras.json`, a list of `{ "name": "...", "ip": "..." }`.
   Edit it with `m` in the main menu (add, edit, remove). The file is created empty if
   it is missing and is not committed to git.
-* **License**: `config/.expiration.json` holds the end date (`{"date":"YYYYMMDD"}`),
-  compared with the machine's clock. When it has passed, the main menu shows the
-  license page, where a renewal code can be entered. Codes are checked against the
-  `VIDEOSYSTEM_ID` environment variable. A code encodes the day it was generated, must be
-  entered within 30 days of that, and extends the license to one year after that day
-  (never shortening it). A new install gets one year from the install date.
+* **License**: the system is licensed for one year at a time with a code from
+  Maxlew Studios. When the license has ended, the main menu shows a page where a new
+  code can be entered.
 
 ## Installing on a machine
 
@@ -58,7 +55,7 @@ npm start          # http://localhost:3000/splashscreen
 ```
 
 The camera streams need real cameras on the network. Without a valid
-`config/.expiration.json` the main menu shows the license page.
+a valid license the main menu shows the license page.
 
 ## Project layout
 
@@ -67,9 +64,9 @@ index.js                      routes, camera admin, stream endpoint
 src/camerastream.js           one camera: connection, frame buffer, delayed frames
 src/cameraStreamManager.js    the running streams
 src/frameParserWorker.js      MJPEG parser (worker thread)
-src/licensecheck.js           license date and renewal codes
+src/licensecheck.js           license check
 views/                        EJS pages
 public/                       css, images, sounds
-config/                       cameras.json, .expiration.json
+config/                       camera list
 offline-install/              offline kiosk installer and bundle builder
 ```
