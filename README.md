@@ -4,6 +4,8 @@ A kiosk video-delay system. It reads MJPEG streams from Axis IP cameras and show
 them with a time delay on a touch screen / monitor, in one of three layouts. The
 interface is in Swedish and is driven with the keyboard.
 
+For the people who use the system there is a short manual in Swedish: **[lathund.md](lathund.md)**.
+
 ## Layouts
 
 | Key in the main menu | Layout |
