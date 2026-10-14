@@ -10,7 +10,7 @@ import open from 'open'
 import { CameraStreamManager } from './src/cameraStreamManager.js'
 import { URL } from 'url'
 import { exec } from 'node:child_process'
-import { checkValidity, testCode } from './src/licensecheck.js'
+import { checkValidity, getExpirationDate, testCode } from './src/licensecheck.js'
 
 
 dotenv.config()
@@ -188,7 +188,7 @@ app.get('/', checkLicense, async function (req, res) {
   }
   await reloadCameras()
   res.setHeader('Content-Language', 'sv')
-  res.render('index', { config })
+  res.render('index', { config, licenseUntil: getExpirationDate() })
 })
 
 app.get('/shutdown', function (req, res) {

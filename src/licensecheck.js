@@ -41,6 +41,13 @@ async function checkValidity() {
     return valid
 }
 
+// The last valid day as YYYY-MM-DD, for display.
+function getExpirationDate() {
+  const exp = JSON.parse(fs.readFileSync('./config/.expiration.json'))
+  const d = String(exp.date)
+  return `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+}
+
 async function testCode (codeToTest) {
   const exp = await JSON.parse(fs.readFileSync('./config/.expiration.json'))
   const userId = process.env.VIDEOSYSTEM_ID
@@ -79,4 +86,4 @@ async function testCode (codeToTest) {
 }
 
 
-export { checkValidity, testCode }
+export { checkValidity, getExpirationDate, testCode }

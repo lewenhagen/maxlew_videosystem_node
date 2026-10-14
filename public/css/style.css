@@ -1,3 +1,20 @@
+@font-face {
+  font-family: 'Sora';
+  src: url('/fonts/Sora.ttf') format('truetype');
+  font-weight: 100 800;
+  font-display: swap;
+}
+
+.menu {
+  font-family: 'Sora', Verdana, Geneva, Tahoma, sans-serif;
+  font-size: 1.4em;
+  line-height: 1.5;
+  /* fixed width so the menu does not jump between pages */
+  width: 26em;
+  max-width: 90vw;
+  overflow-wrap: anywhere;
+}
+
 html {
   height: 100%;
 }
@@ -232,4 +249,21 @@ input[type=submit]:hover {
 @keyframes fadein {
     from { opacity: 0; }
     to   { opacity: 1; }
+}
+
+.with-icon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.menu-icon {
+  width: 1.6em;
+  height: 1.1em;
+  margin-left: 0.5em;
+  flex: none;
+  fill: none;
+  stroke: #00AEEF;
+  stroke-width: 3;
+  stroke-linecap: round;
 }
